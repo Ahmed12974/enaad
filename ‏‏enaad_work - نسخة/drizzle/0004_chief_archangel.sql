@@ -1,0 +1,1 @@
+ALTER TYPE "public"."challenge_participant_status" ADD VALUE 'disqualified';
