@@ -88,6 +88,7 @@ try {
   await applyMigration('0008-rules-lifecycle', ['drizzle/0008_rules_lifecycle.sql'])
   await applyMigration('0009-soft-delete-words', ['drizzle/0009_soft_delete_words.sql'])
   await applyMigration('0010-audit-outcomes', ['drizzle/0010_audit_outcomes.sql'])
+  await applyMigration('0011-rate-limit-repair', ['drizzle/0011_rate_limit_repair.sql'])
 
   const validation = await client.query(`select
     to_regclass('public."user"') is not null as "userTable",
@@ -104,6 +105,15 @@ try {
     to_regclass('public."siteContent"') is not null as "siteContentTable",
     to_regclass('public."siteContentVersions"') is not null as "siteContentVersionsTable",
     to_regclass('public."platformSettings"') is not null as "platformSettingsTable",
+    to_regclass('public."rateLimit"') is not null as "rateLimitTable",
+    exists (
+      select 1 from information_schema.columns
+      where table_schema = 'public' and table_name = 'rateLimit' and column_name = 'id'
+    ) as "rateLimitIdColumn",
+    exists (
+      select 1 from pg_indexes
+      where schemaname = 'public' and tablename = 'rateLimit' and indexdef like '%UNIQUE%(%key%)'
+    ) as "rateLimitKeyUnique",
     exists (
       select 1 from information_schema.columns
       where table_schema = 'public' and table_name = 'promotionRules' and column_name = 'applicationMode'
