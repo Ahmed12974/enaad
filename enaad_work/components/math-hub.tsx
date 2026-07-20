@@ -64,7 +64,14 @@ export function MathQuiz({ slug, name }: { slug: string; name: string }) {
     setError('')
     try {
       const data = await getMathQuiz(slug, count, crypto.randomUUID())
-      if (!data.questions.length) throw new Error('لا توجد أسئلة منشورة في هذا القسم بعد.')
+      if (!data.ok) {
+        setError(data.error)
+        return
+      }
+      if (!data.questions.length) {
+        setError('لا توجد أسئلة منشورة في هذا القسم بعد.')
+        return
+      }
       setAttemptId(data.attemptId)
       setQuestions(data.questions)
       setIndex(0)

@@ -886,14 +886,22 @@ export async function getMathQuiz(sectionSlug: string, count = 10, requestKeyVal
     .from(mathAttempts)
     .where(and(eq(mathAttempts.userId, current.id), eq(mathAttempts.requestKey, requestKey)))
     .limit(1)
-  if (existing) return { section, ...(await loadMathAttempt(existing.id, current.id)) }
+  if (existing)
+    return { ok: true as const, section, ...(await loadMathAttempt(existing.id, current.id)) }
 
   const [{ count: total }] = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(mathQuestions)
     .where(and(eq(mathQuestions.sectionId, section.id), eq(mathQuestions.isActive, true)))
   if (total < safeCount)
-    throw new Error(`يتوفر ${total} سؤالًا فقط في هذا القسم. اختر عددًا أقل أو أضف أسئلة جديدة.`)
+    return {
+      ok: false as const,
+      availableCount: total,
+      error:
+        total === 0
+          ? 'لا توجد أسئلة منشورة في هذا القسم حاليًا. أضف أسئلة من لوحة التحكم ثم أعد المحاولة.'
+          : `يتوفر ${total} سؤالًا فقط في هذا القسم. اختر عددًا أقل.`,
+    }
   const sampleSize = Math.min(total, Math.max(safeCount * 5, 100))
   const offset = Math.floor(Math.random() * Math.max(1, total - sampleSize + 1))
   const candidates = await db
@@ -926,9 +934,9 @@ export async function getMathQuiz(sectionSlug: string, count = 10, requestKeyVal
       .where(and(eq(mathAttempts.userId, current.id), eq(mathAttempts.requestKey, requestKey)))
       .limit(1)
     if (!duplicate) throw new Error('تعذر إنشاء محاولة الرياضيات')
-    return { section, ...(await loadMathAttempt(duplicate.id, current.id)) }
+    return { ok: true as const, section, ...(await loadMathAttempt(duplicate.id, current.id)) }
   }
-  return { section, ...(await loadMathAttempt(createdId, current.id)) }
+  return { ok: true as const, section, ...(await loadMathAttempt(createdId, current.id)) }
 }
 
 export async function submitMathQuiz(
