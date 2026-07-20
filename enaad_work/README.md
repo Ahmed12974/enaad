@@ -141,3 +141,5 @@ E2E_ALLOW_ADMIN_FIXTURE=1 pnpm test:e2e
 
 راجع `ADMIN_FINAL_ACCEPTANCE.md` و`ADMIN_DASHBOARD_REPORT.md` للنتائج الفعلية وحدود
 التحقق، و`AUTH_REMEDIATION_REPORT.md` لتفاصيل المصادقة.
+
+Vercel deployment refresh
