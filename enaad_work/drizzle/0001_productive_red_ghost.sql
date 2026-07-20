@@ -1,1 +1,0 @@
-CREATE UNIQUE INDEX "encouragement_messages_message_unique" ON "encouragementMessages" USING btree ("message");
