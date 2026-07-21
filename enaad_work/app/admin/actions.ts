@@ -14,19 +14,24 @@ import {
 } from '@/lib/admin-domain'
 import { getAuditRequestContext, writeAdminAudit } from '@/lib/admin-audit'
 import { requirePermission } from '@/lib/auth-session'
-import { db } from '@/lib/db'
+import { db, type DbTransaction } from '@/lib/db'
 import {
   adminNotes,
   achievements,
   badges,
+  categories,
   challengeParticipants,
   challengeModeration,
   challengeResults,
   challengeSettings,
   challenges,
+  competitionCategories,
+  competitionParticipants,
+  competitions,
   contentPrerequisites,
   educationalSections,
   levels,
+  mathSections,
   platformSettings,
   promotionRuleExecutions,
   promotionRules,
@@ -769,6 +774,414 @@ function parseManagedChallengeRules(form: FormData) {
     winningRules: { tieBreaker: values.tieBreaker },
   }
 }
+
+const levelSchema = z.object({
+  name: z.string().trim().min(2).max(120),
+  description: z.string().trim().max(1_000).nullable(),
+  rank: z.coerce.number().int().min(1).max(10_000),
+  minimumPoints: z.coerce.number().int().min(0).max(1_000_000_000),
+  color: z
+    .string()
+    .trim()
+    .regex(/^#[0-9a-f]{6}$/i)
+    .nullable(),
+  isActive: z.boolean(),
+})
+
+function parseLevel(form: FormData) {
+  return levelSchema.parse({
+    name: form.get('name'),
+    description: cleanText(form.get('description')) || null,
+    rank: form.get('rank'),
+    minimumPoints: form.get('minimumPoints') || 0,
+    color: cleanText(form.get('color')) || null,
+    isActive: form.get('isActive') === 'on',
+  })
+}
+
+export async function createLevel(form: FormData): Promise<Result> {
+  const { actor, context } = await authorizeMutation('users:write')
+  const parsed = parseLevel(form)
+  try {
+    await db.transaction(async (tx) => {
+      const [created] = await tx.insert(levels).values(parsed).returning()
+      if (!created) throw new Error('تعذر إنشاء المستوى.')
+      await writeAdminAudit(
+        tx,
+        {
+          actorUserId: actor.id,
+          action: 'level.create',
+          entityType: 'level',
+          entityId: String(created.id),
+          after: created,
+        },
+        context,
+      )
+    })
+  } catch (error) {
+    if (isUniqueViolation(error)) return { ok: false, message: 'يوجد مستوى بالاسم أو الترتيب نفسه.' }
+    throw error
+  }
+  refreshAdmin()
+  return { ok: true, message: 'تم إنشاء المستوى.' }
+}
+
+export async function updateLevel(levelIdValue: number, form: FormData): Promise<Result> {
+  const { actor, context } = await authorizeMutation('users:write')
+  const levelId = positiveId.parse(levelIdValue)
+  const parsed = parseLevel(form)
+  try {
+    await db.transaction(async (tx) => {
+      const [before] = await tx.select().from(levels).where(eq(levels.id, levelId)).limit(1)
+      if (!before) throw new Error('المستوى غير موجود.')
+      const [after] = await tx
+        .update(levels)
+        .set({ ...parsed, updatedAt: new Date() })
+        .where(eq(levels.id, levelId))
+        .returning()
+      if (!after) throw new Error('تعذر تعديل المستوى.')
+      await writeAdminAudit(
+        tx,
+        {
+          actorUserId: actor.id,
+          action: 'level.update',
+          entityType: 'level',
+          entityId: String(levelId),
+          before,
+          after,
+        },
+        context,
+      )
+    })
+  } catch (error) {
+    if (isUniqueViolation(error)) return { ok: false, message: 'يوجد مستوى بالاسم أو الترتيب نفسه.' }
+    throw error
+  }
+  refreshAdmin()
+  return { ok: true, message: 'تم تعديل المستوى.' }
+}
+
+export async function toggleLevel(levelIdValue: number): Promise<Result> {
+  const { actor, context } = await authorizeMutation('users:write')
+  const levelId = positiveId.parse(levelIdValue)
+  await db.transaction(async (tx) => {
+    const [before] = await tx.select().from(levels).where(eq(levels.id, levelId)).limit(1)
+    if (!before) throw new Error('المستوى غير موجود.')
+    const [after] = await tx
+      .update(levels)
+      .set({ isActive: !before.isActive, updatedAt: new Date() })
+      .where(eq(levels.id, levelId))
+      .returning()
+    await writeAdminAudit(
+      tx,
+      {
+        actorUserId: actor.id,
+        action: 'level.toggle',
+        entityType: 'level',
+        entityId: String(levelId),
+        before,
+        after,
+      },
+      context,
+    )
+  })
+  refreshAdmin()
+  return { ok: true, message: 'تم تحديث حالة المستوى.' }
+}
+
+export async function deleteLevel(levelIdValue: number, reasonValue: string): Promise<Result> {
+  const { actor, context } = await authorizeMutation('users:write')
+  const levelId = positiveId.parse(levelIdValue)
+  const reason = z.string().trim().min(5).max(500).parse(reasonValue)
+  await db.transaction(async (tx) => {
+    const [before] = await tx.select().from(levels).where(eq(levels.id, levelId)).limit(1)
+    if (!before) throw new Error('المستوى غير موجود.')
+    const [[profileUsage], [ruleUsage]] = await Promise.all([
+      tx
+        .select({ id: userAdminProfiles.userId })
+        .from(userAdminProfiles)
+        .where(eq(userAdminProfiles.levelId, levelId))
+        .limit(1),
+      tx
+        .select({ id: promotionRules.id })
+        .from(promotionRules)
+        .where(eq(promotionRules.targetLevelId, levelId))
+        .limit(1),
+    ])
+    if (profileUsage || ruleUsage)
+      throw new Error('لا يمكن حذف مستوى مرتبط بمستخدمين أو قواعد ترقية. عطّله بدلًا من ذلك.')
+    await tx.delete(levels).where(eq(levels.id, levelId))
+    await writeAdminAudit(
+      tx,
+      {
+        actorUserId: actor.id,
+        action: 'level.delete',
+        entityType: 'level',
+        entityId: String(levelId),
+        before,
+        reason,
+      },
+      context,
+    )
+  })
+  refreshAdmin()
+  return { ok: true, message: 'تم حذف المستوى غير المستخدم.' }
+}
+
+const competitionFormSchema = z.object({
+  title: z.string().trim().min(2).max(160),
+  description: z.string().trim().min(2).max(2_000),
+  scope: z.enum(['all', 'en', 'ar', 'math']),
+  sectionId: positiveId.nullable(),
+  questionCount: z.coerce.number().int().min(1).max(30),
+  xpReward: z.coerce.number().int().min(0).max(100_000),
+  startsAt: z.date().nullable(),
+  endsAt: z.date().nullable(),
+  isActive: z.boolean(),
+  categoryIds: z.array(positiveId).max(100),
+})
+
+type ParsedCompetition = z.infer<typeof competitionFormSchema>
+
+function parseManagedCompetition(form: FormData): ParsedCompetition {
+  const categoryIds = [...new Set(form.getAll('categoryIds').map((value) => Number(value)).filter(Boolean))]
+  const parsed = competitionFormSchema.parse({
+    title: form.get('title'),
+    description: form.get('description'),
+    scope: form.get('scope') || 'all',
+    sectionId: Number(form.get('sectionId') || 0) || null,
+    questionCount: form.get('questionCount') || 10,
+    xpReward: form.get('xpReward') || 100,
+    startsAt: nullableDate(form.get('startsAt')),
+    endsAt: nullableDate(form.get('endsAt')),
+    isActive: form.get('isActive') === 'on',
+    categoryIds,
+  })
+  if (parsed.startsAt && parsed.endsAt && parsed.endsAt <= parsed.startsAt)
+    throw new Error('يجب أن يكون وقت النهاية بعد وقت البداية.')
+  if (parsed.scope === 'en' || parsed.scope === 'ar') parsed.sectionId = null
+  if (parsed.scope === 'math') parsed.categoryIds = []
+  return parsed
+}
+
+async function validateCompetitionReferences(tx: DbTransaction, parsed: ParsedCompetition) {
+  if (parsed.sectionId) {
+    const [section] = await tx
+      .select({ id: mathSections.id })
+      .from(mathSections)
+      .where(and(eq(mathSections.id, parsed.sectionId), eq(mathSections.isActive, true)))
+      .limit(1)
+    if (!section) throw new Error('قسم الرياضيات المحدد غير متاح.')
+  }
+  if (!parsed.categoryIds.length) return
+  const rows = await tx
+    .select({ id: categories.id, language: categories.language })
+    .from(categories)
+    .where(
+      and(
+        inArray(categories.id, parsed.categoryIds),
+        eq(categories.scope, 'platform'),
+        eq(categories.isActive, true),
+        isNull(categories.userId),
+      ),
+    )
+  if (rows.length !== parsed.categoryIds.length) throw new Error('بعض أقسام الأسئلة غير صالحة أو غير نشطة.')
+  const allowedLanguages = parsed.scope === 'all' ? new Set(['en', 'ar']) : new Set([parsed.scope])
+  if (rows.some((row) => !allowedLanguages.has(row.language)))
+    throw new Error('أقسام الأسئلة المختارة لا تطابق نطاق المنافسة.')
+}
+
+export async function createManagedCompetition(form: FormData): Promise<Result> {
+  const { actor, context } = await authorizeMutation('competitions:write')
+  const parsed = parseManagedCompetition(form)
+  const { categoryIds, ...record } = parsed
+  try {
+    await db.transaction(async (tx) => {
+      await validateCompetitionReferences(tx, parsed)
+      const [created] = await tx
+        .insert(competitions)
+        .values({ ...record, normalizedTitle: normalizeText(record.title) })
+        .returning()
+      if (!created) throw new Error('تعذر إنشاء المنافسة.')
+      if (categoryIds.length)
+        await tx
+          .insert(competitionCategories)
+          .values(categoryIds.map((categoryId) => ({ competitionId: created.id, categoryId })))
+      await writeAdminAudit(
+        tx,
+        {
+          actorUserId: actor.id,
+          action: 'competition.create',
+          entityType: 'competition',
+          entityId: String(created.id),
+          after: { ...created, categoryIds },
+        },
+        context,
+      )
+    })
+  } catch (error) {
+    if (isUniqueViolation(error)) return { ok: false, message: 'توجد منافسة بالعنوان نفسه.' }
+    throw error
+  }
+  refreshAdmin()
+  revalidatePath('/competitions')
+  return { ok: true, message: 'تم إنشاء المنافسة وربطها بأقسام الأسئلة.' }
+}
+
+export async function updateManagedCompetition(
+  competitionIdValue: number,
+  form: FormData,
+): Promise<Result> {
+  const { actor, context } = await authorizeMutation('competitions:write')
+  const competitionId = positiveId.parse(competitionIdValue)
+  const parsed = parseManagedCompetition(form)
+  const reason = z.string().trim().min(5).max(500).parse(form.get('reason'))
+  const { categoryIds, ...record } = parsed
+  try {
+    await db.transaction(async (tx) => {
+      const [before] = await tx.select().from(competitions).where(eq(competitions.id, competitionId)).limit(1)
+      if (!before) throw new Error('المنافسة غير موجودة.')
+      await validateCompetitionReferences(tx, parsed)
+      const [after] = await tx
+        .update(competitions)
+        .set({ ...record, normalizedTitle: normalizeText(record.title), updatedAt: new Date() })
+        .where(eq(competitions.id, competitionId))
+        .returning()
+      await tx.delete(competitionCategories).where(eq(competitionCategories.competitionId, competitionId))
+      if (categoryIds.length)
+        await tx
+          .insert(competitionCategories)
+          .values(categoryIds.map((categoryId) => ({ competitionId, categoryId })))
+      await writeAdminAudit(
+        tx,
+        {
+          actorUserId: actor.id,
+          action: 'competition.update',
+          entityType: 'competition',
+          entityId: String(competitionId),
+          before,
+          after: { ...after, categoryIds },
+          reason,
+        },
+        context,
+      )
+    })
+  } catch (error) {
+    if (isUniqueViolation(error)) return { ok: false, message: 'توجد منافسة بالعنوان نفسه.' }
+    throw error
+  }
+  refreshAdmin()
+  revalidatePath('/competitions')
+  return { ok: true, message: 'تم تعديل المنافسة.' }
+}
+
+export async function toggleManagedCompetition(competitionIdValue: number): Promise<Result> {
+  const { actor, context } = await authorizeMutation('competitions:write')
+  const competitionId = positiveId.parse(competitionIdValue)
+  await db.transaction(async (tx) => {
+    const [before] = await tx.select().from(competitions).where(eq(competitions.id, competitionId)).limit(1)
+    if (!before) throw new Error('المنافسة غير موجودة.')
+    const [after] = await tx
+      .update(competitions)
+      .set({ isActive: !before.isActive, updatedAt: new Date() })
+      .where(eq(competitions.id, competitionId))
+      .returning()
+    await writeAdminAudit(
+      tx,
+      {
+        actorUserId: actor.id,
+        action: 'competition.toggle',
+        entityType: 'competition',
+        entityId: String(competitionId),
+        before,
+        after,
+      },
+      context,
+    )
+  })
+  refreshAdmin()
+  revalidatePath('/competitions')
+  return { ok: true, message: 'تم تحديث حالة المنافسة.' }
+}
+
+export async function deleteManagedCompetition(
+  competitionIdValue: number,
+  reasonValue: string,
+): Promise<Result> {
+  const { actor, context } = await authorizeMutation('competitions:write')
+  const competitionId = positiveId.parse(competitionIdValue)
+  const reason = z.string().trim().min(5).max(500).parse(reasonValue)
+  await db.transaction(async (tx) => {
+    const [before] = await tx.select().from(competitions).where(eq(competitions.id, competitionId)).limit(1)
+    if (!before) throw new Error('المنافسة غير موجودة.')
+    const [usage] = await tx
+      .select({ count: sql<number>`count(*)::int` })
+      .from(competitionParticipants)
+      .where(eq(competitionParticipants.competitionId, competitionId))
+    if ((usage?.count ?? 0) > 0)
+      throw new Error('لا يمكن حذف منافسة لها مشاركون. عطّلها للحفاظ على النتائج والسجل.')
+    await tx.delete(competitions).where(eq(competitions.id, competitionId))
+    await writeAdminAudit(
+      tx,
+      {
+        actorUserId: actor.id,
+        action: 'competition.delete',
+        entityType: 'competition',
+        entityId: String(competitionId),
+        before,
+        reason,
+      },
+      context,
+    )
+  })
+  refreshAdmin()
+  revalidatePath('/competitions')
+  return { ok: true, message: 'تم حذف المنافسة التي لم تبدأ.' }
+}
+
+export async function setCompetitionParticipantStatus(form: FormData): Promise<Result> {
+  const { actor, context } = await authorizeMutation('competitions:write')
+  const participantId = positiveId.parse(form.get('participantId'))
+  const requestedStatus = z.enum(['joined', 'active', 'disqualified']).parse(form.get('status'))
+  const reason = z.string().trim().min(5).max(500).parse(form.get('reason'))
+  await db.transaction(async (tx) => {
+    await tx.execute(sql`select pg_advisory_xact_lock(${participantId})`)
+    const [before] = await tx
+      .select()
+      .from(competitionParticipants)
+      .where(eq(competitionParticipants.id, participantId))
+      .limit(1)
+    if (!before) throw new Error('المشارك غير موجود.')
+    if (!['joined', 'active', 'disqualified'].includes(before.status))
+      throw new Error('لا يمكن تغيير هذه المشاركة أثناء التصحيح أو بعد التسليم أو انتهاء المهلة.')
+    const status =
+      requestedStatus === 'joined' && before.status === 'disqualified' && before.startedAt
+        ? 'active'
+        : requestedStatus
+    const [after] = await tx
+      .update(competitionParticipants)
+      .set({ status, updatedAt: new Date() })
+      .where(eq(competitionParticipants.id, participantId))
+      .returning()
+    await writeAdminAudit(
+      tx,
+      {
+        actorUserId: actor.id,
+        action: 'competition.participant.status',
+        entityType: 'competitionParticipant',
+        entityId: String(participantId),
+        before,
+        after,
+        reason,
+      },
+      context,
+    )
+  })
+  refreshAdmin()
+  revalidatePath('/competitions')
+  return { ok: true, message: 'تم تحديث حالة المشارك.' }
+}
+
 
 export async function createManagedChallenge(form: FormData): Promise<Result> {
   const { actor, context } = await authorizeMutation('competitions:write')
@@ -2852,6 +3265,108 @@ export async function restoreSiteContentVersion(
   revalidatePath('/')
   return { ok: true, message: 'تمت استعادة النسخة كمسودة جديدة دون حذف التاريخ.' }
 }
+
+async function saveSiteContentVersion(tx: DbTransaction, item: typeof siteContent.$inferSelect, actorId: string) {
+  await tx.insert(siteContentVersions).values({
+    siteContentId: item.id,
+    version: item.version,
+    title: item.title,
+    content: item.content,
+    status: item.status,
+    isVisible: item.isVisible,
+    startsAt: item.startsAt,
+    endsAt: item.endsAt,
+    createdBy: actorId,
+  })
+}
+
+export async function setSiteContentStatus(
+  contentIdValue: string,
+  statusValue: string,
+  reasonValue: string,
+): Promise<Result> {
+  const { actor, context } = await authorizeMutation('content:write')
+  const contentId = uuid.parse(contentIdValue)
+  const status = publication.parse(statusValue)
+  const reason = z.string().trim().min(5).max(500).parse(reasonValue)
+  await db.transaction(async (tx) => {
+    const [before] = await tx.select().from(siteContent).where(eq(siteContent.id, contentId)).limit(1)
+    if (!before) throw new Error('عنصر محتوى الموقع غير موجود.')
+    if (status === 'scheduled' && (!before.startsAt || before.startsAt <= new Date()))
+      throw new Error('حدد بداية عرض مستقبلية قبل جدولة المحتوى.')
+    const [after] = await tx
+      .update(siteContent)
+      .set({
+        status,
+        isVisible: status === 'archived' ? false : before.isVisible,
+        version: sql`${siteContent.version} + 1`,
+        updatedBy: actor.id,
+        updatedAt: new Date(),
+      })
+      .where(eq(siteContent.id, contentId))
+      .returning()
+    if (!after) throw new Error('تعذر تحديث حالة المحتوى.')
+    await saveSiteContentVersion(tx, after, actor.id)
+    await writeAdminAudit(
+      tx,
+      {
+        actorUserId: actor.id,
+        action: 'siteContent.status',
+        entityType: 'siteContent',
+        entityId: contentId,
+        before,
+        after,
+        reason,
+      },
+      context,
+    )
+  })
+  refreshAdmin()
+  revalidatePath('/')
+  return { ok: true, message: 'تم تحديث حالة محتوى الواجهة.' }
+}
+
+export async function toggleSiteContentVisibility(
+  contentIdValue: string,
+  reasonValue: string,
+): Promise<Result> {
+  const { actor, context } = await authorizeMutation('content:write')
+  const contentId = uuid.parse(contentIdValue)
+  const reason = z.string().trim().min(5).max(500).parse(reasonValue)
+  await db.transaction(async (tx) => {
+    const [before] = await tx.select().from(siteContent).where(eq(siteContent.id, contentId)).limit(1)
+    if (!before) throw new Error('عنصر محتوى الموقع غير موجود.')
+    const [after] = await tx
+      .update(siteContent)
+      .set({
+        isVisible: !before.isVisible,
+        version: sql`${siteContent.version} + 1`,
+        updatedBy: actor.id,
+        updatedAt: new Date(),
+      })
+      .where(eq(siteContent.id, contentId))
+      .returning()
+    if (!after) throw new Error('تعذر تحديث ظهور المحتوى.')
+    await saveSiteContentVersion(tx, after, actor.id)
+    await writeAdminAudit(
+      tx,
+      {
+        actorUserId: actor.id,
+        action: 'siteContent.visibility',
+        entityType: 'siteContent',
+        entityId: contentId,
+        before,
+        after,
+        reason,
+      },
+      context,
+    )
+  })
+  refreshAdmin()
+  revalidatePath('/')
+  return { ok: true, message: 'تم تحديث ظهور محتوى الواجهة.' }
+}
+
 
 export async function updatePlatformSettings(form: FormData): Promise<Result> {
   const { actor, context } = await authorizeMutation('content:write')

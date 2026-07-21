@@ -1205,7 +1205,7 @@ export async function createCompetition(form: FormData) {
     })
   if (parsed.startsAt && parsed.endsAt && parsed.endsAt <= parsed.startsAt)
     throw new Error('يجب أن يكون وقت النهاية بعد وقت البداية')
-  if (parsed.scope !== 'math') parsed.sectionId = null
+  if (parsed.scope === 'en' || parsed.scope === 'ar') parsed.sectionId = null
   if (parsed.sectionId) {
     const [section] = await db
       .select({ id: mathSections.id })
@@ -1285,8 +1285,35 @@ export async function getCompetitionQuiz(competitionId: number) {
   if (!participant) throw new Error('انضم إلى المنافسة أولًا')
   if (participant.status === 'submitted')
     return { competition, questions: [] as CompetitionQuestion[], completed: true }
+  if (participant.status === 'disqualified') throw new Error('تم استبعادك من هذه المنافسة.')
+  if (participant.status === 'expired') throw new Error('انتهت صلاحية مشاركتك في هذه المنافسة.')
+  if (participant.status === 'grading') throw new Error('يجري تصحيح مشاركتك الآن.')
   const saved = await existingCompetitionQuestions(participant.id)
-  if (saved.length) return { competition, questions: saved, completed: false }
+  if (saved.length) {
+    await db.transaction(async (tx) => {
+      await tx.execute(sql`select pg_advisory_xact_lock(${participant.id})`)
+      const [state] = await tx
+        .select()
+        .from(competitionParticipants)
+        .where(eq(competitionParticipants.id, participant.id))
+        .limit(1)
+      if (!state) throw new Error('تعذر قراءة المشاركة.')
+      if (state.status === 'disqualified') throw new Error('تم استبعادك من هذه المنافسة.')
+      if (state.status === 'expired') throw new Error('انتهت صلاحية مشاركتك في هذه المنافسة.')
+      if (state.status === 'grading') throw new Error('يجري تصحيح مشاركتك الآن.')
+      if (state.status === 'joined')
+        await tx
+          .update(competitionParticipants)
+          .set({ status: 'active', startedAt: state.startedAt ?? new Date(), updatedAt: new Date() })
+          .where(
+            and(
+              eq(competitionParticipants.id, participant.id),
+              eq(competitionParticipants.status, 'joined'),
+            ),
+          )
+    })
+    return { competition, questions: saved, completed: false }
+  }
 
   await db.transaction(async (tx) => {
     await tx.execute(sql`select pg_advisory_xact_lock(${participant.id})`)
@@ -1296,6 +1323,8 @@ export async function getCompetitionQuiz(competitionId: number) {
       .where(eq(competitionParticipants.id, participant.id))
       .limit(1)
     if (!state || state.status === 'submitted') return
+    if (state.status === 'disqualified' || state.status === 'expired' || state.status === 'grading')
+      throw new Error('هذه المشاركة غير متاحة للبدء.')
     const [{ count: issuedCount }] = await tx
       .select({ count: sql<number>`count(*)::int` })
       .from(competitionQuestions)

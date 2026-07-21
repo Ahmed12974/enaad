@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import {
   Activity,
   Award,
+  Crown,
   BarChart3,
   BookOpen,
   FileText,
@@ -34,9 +35,13 @@ import {
   changeContentStatus,
   createAchievement,
   createBadge,
+  createLevel,
+  createManagedCompetition,
   createEducationalSection,
   createManagedChallenge,
   createPromotionRule,
+  deleteLevel,
+  deleteManagedCompetition,
   createSectionContent,
   duplicateSectionContent,
   excludeChallengeParticipant,
@@ -44,6 +49,8 @@ import {
   duplicatePromotionRule,
   executePromotionRuleBatch,
   grantUserBadge,
+  setCompetitionParticipantStatus,
+  setSiteContentStatus,
   reinstateChallengeParticipant,
   moveSectionContent,
   restoreEducationalSection,
@@ -52,9 +59,14 @@ import {
   restoreSectionContent,
   setUserLevel,
   retryPromotionRuleExecution,
+  toggleLevel,
+  toggleManagedCompetition,
   togglePromotionRule,
+  toggleSiteContentVisibility,
   toggleAchievement,
   updateEducationalSection,
+  updateLevel,
+  updateManagedCompetition,
   updatePromotionRuleMetadata,
   updatePlatformSettings,
   updateManagedUserStatus,
@@ -82,7 +94,8 @@ const navigation = [
   ['users', 'المستخدمون', Users],
   ['sections', 'الأقسام', FolderTree],
   ['content', 'المحتوى التعليمي', BookOpen],
-  ['challenges', 'التحديات والمنافسات', Trophy],
+  ['challenges', 'التحديات', Trophy],
+  ['competitions', 'المنافسات', Crown],
   ['promotions', 'المستويات والترقيات', Sparkles],
   ['badges', 'الشارات والإنجازات', Award],
   ['cms', 'محتوى واجهة الموقع', FileText],
@@ -127,6 +140,7 @@ export function AdminConsole({ data, section }: { data: Data; section: AdminSect
           {section === 'sections' && <SectionsPanel data={data} />}
           {section === 'content' && <ContentPanel data={data} />}
           {section === 'challenges' && <ChallengesPanel data={data} />}
+          {section === 'competitions' && <CompetitionsPanel data={data} />}
           {section === 'promotions' && <PromotionsPanel data={data} />}
           {section === 'badges' && <BadgesPanel data={data} />}
           {section === 'cms' && <CmsPanel data={data} />}
@@ -481,14 +495,18 @@ function UsersPanel({ data }: { data: Data }) {
                 </option>
               ))}
             </select>
-            <Input
+            <select
               name="competitionId"
-              type="number"
-              min="1"
               defaultValue={params.get('competitionId') ?? ''}
-              placeholder="رقم المنافسة"
               aria-label="المنافسة"
-            />
+            >
+              <option value="">كل المنافسات</option>
+              {data.competitions.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.title}
+                </option>
+              ))}
+            </select>
             <select name="contentId" defaultValue={params.get('contentId') ?? ''} aria-label="المحتوى">
               <option value="">كل المحتوى</option>
               {data.contents.map((item) => (
@@ -1316,9 +1334,320 @@ function ChallengesPanel({ data }: { data: Data }) {
   )
 }
 
+function CompetitionsPanel({ data }: { data: Data }) {
+  return (
+    <div className="admin-stack">
+      <Alert>
+        <AlertDescription>
+          المنافسات هنا منفصلة عن التحديات: تحدد نطاق الأسئلة وموعد البدء والانتهاء والمكافأة،
+          وتُحفظ أسئلة كل مشارك على الخادم لمنع تبديلها أو تزوير النتيجة.
+        </AlertDescription>
+      </Alert>
+      <Card>
+        <CardHeader>
+          <CardTitle>إنشاء منافسة</CardTitle>
+          <CardDescription>يمكن إنشاء منافسة عربية أو إنجليزية أو رياضيات أو نطاق مختلط.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <CompetitionForm action={createManagedCompetition} data={data} />
+        </CardContent>
+      </Card>
+      <div className="admin-card-grid">
+        {data.competitions.map((competition) => {
+          const categoryIds = data.competitionCategories
+            .filter((item) => item.competitionId === competition.id)
+            .map((item) => item.categoryId)
+          const participants = data.competitionParticipants.filter(
+            (participant) => participant.competitionId === competition.id,
+          )
+          return (
+            <Card key={competition.id}>
+              <CardHeader>
+                <CardTitle>{competition.title}</CardTitle>
+                <CardDescription>{competition.description}</CardDescription>
+              </CardHeader>
+              <CardContent className="admin-stack-sm">
+                <div className="admin-row">
+                  <Status value={competition.isActive ? 'active' : 'disabled'} />
+                  <Badge>{competitionScopeLabel(competition.scope)}</Badge>
+                  <span>{competition.questionCount} سؤال</span>
+                  <span>{competition.xpReward} XP</span>
+                  <span>{competition.participantCount} مشارك</span>
+                  <span>{competition.submittedCount} نتيجة</span>
+                </div>
+                <p>
+                  {competition.startsAt ? `البداية: ${formatDate(competition.startsAt)}` : 'يبدأ فور التفعيل'} ·{' '}
+                  {competition.endsAt ? `النهاية: ${formatDate(competition.endsAt)}` : 'بلا موعد انتهاء'}
+                </p>
+                <div className="admin-row">
+                  <ActionButton
+                    action={() => toggleManagedCompetition(competition.id)}
+                    label={competition.isActive ? 'تعطيل المنافسة' : 'تفعيل المنافسة'}
+                  />
+                </div>
+                <details>
+                  <summary>تعديل إعدادات المنافسة</summary>
+                  <CompetitionForm
+                    action={(form) => updateManagedCompetition(competition.id, form)}
+                    data={data}
+                    competition={competition}
+                    categoryIds={categoryIds}
+                    requireReason
+                  />
+                </details>
+                <ManagedForm
+                  compact
+                  action={(form) =>
+                    deleteManagedCompetition(competition.id, String(form.get('reason') ?? ''))
+                  }
+                  submitLabel="حذف المنافسة غير المستخدمة"
+                  confirm="الحذف متاح فقط إذا لم ينضم أي مستخدم، وإلا يجب تعطيل المنافسة."
+                >
+                  <Input name="reason" required minLength={5} placeholder="سبب الحذف" />
+                </ManagedForm>
+                {participants.length > 0 && (
+                  <details>
+                    <summary>إدارة المشاركين ({participants.length})</summary>
+                    <div className="admin-list">
+                      {participants.map((participant) => (
+                        <div className="admin-list-row" key={participant.id}>
+                          <div>
+                            <b>{participant.userName}</b>
+                            <span>
+                              {participant.userEmail} · {participant.status} · {participant.score}% ·{' '}
+                              {participant.correctAnswers} إجابة صحيحة
+                            </span>
+                          </div>
+                          {['joined', 'active', 'disqualified'].includes(participant.status) && (
+                            <ManagedForm
+                              compact
+                              action={(form) => {
+                                form.set('participantId', String(participant.id))
+                                return setCompetitionParticipantStatus(form)
+                              }}
+                              submitLabel={
+                                participant.status === 'disqualified' ? 'إعادة المشارك' : 'استبعاد المشارك'
+                              }
+                              confirm="سيتم تسجيل تغيير حالة المشارك في سجل العمليات."
+                            >
+                              <input
+                                type="hidden"
+                                name="status"
+                                value={participant.status === 'disqualified' ? 'joined' : 'disqualified'}
+                              />
+                              <Input name="reason" required minLength={5} placeholder="سبب تغيير الحالة" />
+                            </ManagedForm>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </details>
+                )}
+              </CardContent>
+            </Card>
+          )
+        })}
+      </div>
+      {!data.competitions.length && <Empty text="لا توجد منافسات بعد." />}
+    </div>
+  )
+}
+
+function CompetitionForm({
+  action,
+  data,
+  competition,
+  categoryIds = [],
+  requireReason = false,
+}: {
+  action: FormAction
+  data: Data
+  competition?: Data['competitions'][number]
+  categoryIds?: number[]
+  requireReason?: boolean
+}) {
+  return (
+    <ManagedForm
+      action={action}
+      submitLabel={competition ? 'حفظ تعديلات المنافسة' : 'إنشاء المنافسة'}
+      confirm={competition ? 'هل تريد حفظ تغييرات المنافسة؟' : undefined}
+    >
+      <div className="admin-form-grid">
+        <Input name="title" required minLength={2} defaultValue={competition?.title} placeholder="العنوان" />
+        <select name="scope" defaultValue={competition?.scope ?? 'all'} aria-label="نطاق المنافسة">
+          <option value="all">مختلط: عربي وإنجليزي ورياضيات</option>
+          <option value="ar">اللغة العربية</option>
+          <option value="en">اللغة الإنجليزية</option>
+          <option value="math">الرياضيات</option>
+        </select>
+        <select
+          name="sectionId"
+          defaultValue={competition?.sectionId ?? ''}
+          aria-label="قسم الرياضيات المستخدم في نطاق الرياضيات أو النطاق المختلط"
+        >
+          <option value="">كل أقسام الرياضيات</option>
+          {data.mathSections.map((section) => (
+            <option key={section.id} value={section.id} disabled={!section.isActive}>
+              {section.name} {section.isActive ? '' : '(معطل)'}
+            </option>
+          ))}
+        </select>
+        <Input
+          name="questionCount"
+          type="number"
+          min="1"
+          max="30"
+          required
+          defaultValue={competition?.questionCount ?? 10}
+          placeholder="عدد الأسئلة"
+        />
+        <Input
+          name="xpReward"
+          type="number"
+          min="0"
+          defaultValue={competition?.xpReward ?? 100}
+          placeholder="مكافأة XP"
+        />
+        <Input
+          name="startsAt"
+          type="datetime-local"
+          defaultValue={localInputDate(competition?.startsAt ?? null)}
+          aria-label="موعد البداية"
+        />
+        <Input
+          name="endsAt"
+          type="datetime-local"
+          defaultValue={localInputDate(competition?.endsAt ?? null)}
+          aria-label="موعد النهاية"
+        />
+        <label>
+          <input type="checkbox" name="isActive" defaultChecked={competition?.isActive ?? true} /> نشطة
+        </label>
+      </div>
+      <Textarea
+        name="description"
+        required
+        minLength={2}
+        defaultValue={competition?.description}
+        placeholder="وصف المنافسة وقواعدها"
+      />
+      <label className="admin-stack-sm">
+        <span>أقسام أسئلة اللغة المسموحة — استخدم Ctrl/⌘ لاختيار أكثر من قسم</span>
+        <select
+          name="categoryIds"
+          multiple
+          size={Math.min(8, Math.max(3, data.platformCategories.length))}
+          defaultValue={categoryIds.map(String)}
+          aria-label="أقسام أسئلة المنافسة"
+        >
+          {data.platformCategories.map((category) => (
+            <option key={category.id} value={category.id} disabled={!category.isActive}>
+              {category.language === 'ar' ? 'عربي' : 'إنجليزي'} — {category.name}
+              {category.isActive ? '' : ' (معطل)'}
+            </option>
+          ))}
+        </select>
+      </label>
+      {requireReason && <Input name="reason" required minLength={5} placeholder="سبب التعديل" />}
+    </ManagedForm>
+  )
+}
+
+function competitionScopeLabel(scope: Data['competitions'][number]['scope']) {
+  if (scope === 'ar') return 'عربي'
+  if (scope === 'en') return 'إنجليزي'
+  if (scope === 'math') return 'رياضيات'
+  return 'مختلط'
+}
+
+
 function PromotionsPanel({ data }: { data: Data }) {
   return (
     <div className="admin-stack">
+      <Card>
+        <CardHeader>
+          <CardTitle>إدارة مستويات المستخدمين</CardTitle>
+          <CardDescription>
+            أنشئ مستويات الترقية وحدد ترتيب كل مستوى والحد الأدنى من XP، ثم استخدمها داخل قواعد
+            الترقية التلقائية.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ManagedForm action={createLevel} submitLabel="إضافة مستوى">
+            <div className="admin-form-grid">
+              <Input name="name" required minLength={2} placeholder="اسم المستوى" />
+              <Input name="rank" type="number" min="1" required placeholder="الترتيب" />
+              <Input
+                name="minimumPoints"
+                type="number"
+                min="0"
+                defaultValue="0"
+                placeholder="الحد الأدنى من XP"
+              />
+              <Input name="color" type="color" defaultValue="#2563eb" aria-label="لون المستوى" />
+              <label>
+                <input type="checkbox" name="isActive" defaultChecked /> مستوى نشط
+              </label>
+            </div>
+            <Textarea name="description" placeholder="وصف المستوى ومعايير الوصول إليه" />
+          </ManagedForm>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>المستويات الحالية</CardTitle>
+        </CardHeader>
+        <CardContent className="admin-list">
+          {data.levels.map((level) => (
+            <div className="admin-list-row" key={level.id}>
+              <div>
+                <b>
+                  {level.rank}. {level.name}
+                </b>
+                <span>{level.minimumPoints} XP · {level.description || 'بلا وصف'}</span>
+              </div>
+              <Status value={level.isActive ? 'active' : 'disabled'} />
+              <ActionButton
+                action={() => toggleLevel(level.id)}
+                label={level.isActive ? 'تعطيل' : 'تفعيل'}
+              />
+              <details>
+                <summary>تعديل المستوى</summary>
+                <ManagedForm
+                  compact
+                  action={(form) => updateLevel(level.id, form)}
+                  submitLabel="حفظ المستوى"
+                  confirm="سيتم تحديث المستوى مع بقاء المستخدمين وقواعد الترقية المرتبطة به."
+                >
+                  <Input name="name" required minLength={2} defaultValue={level.name} />
+                  <Input name="rank" type="number" min="1" required defaultValue={level.rank} />
+                  <Input
+                    name="minimumPoints"
+                    type="number"
+                    min="0"
+                    required
+                    defaultValue={level.minimumPoints}
+                  />
+                  <Input name="color" type="color" defaultValue={level.color ?? '#2563eb'} />
+                  <label>
+                    <input type="checkbox" name="isActive" defaultChecked={level.isActive} /> نشط
+                  </label>
+                  <Textarea name="description" defaultValue={level.description ?? ''} />
+                </ManagedForm>
+              </details>
+              <ManagedForm
+                compact
+                action={(form) => deleteLevel(level.id, String(form.get('reason') ?? ''))}
+                submitLabel="حذف غير المستخدم"
+                confirm="لن يُحذف المستوى إذا كان مرتبطًا بمستخدم أو قاعدة ترقية."
+              >
+                <Input name="reason" required minLength={5} placeholder="سبب الحذف" />
+              </ManagedForm>
+            </div>
+          ))}
+          {!data.levels.length && <Empty text="لا توجد مستويات بعد." />}
+        </CardContent>
+      </Card>
       <div className="admin-kpis">
         {data.levels.map((level) => (
           <Kpi
@@ -1730,61 +2059,7 @@ function CmsPanel({ data }: { data: Data }) {
           <CardDescription>يمكن حفظ مسودة ومعاينتها قبل تغيير الحالة إلى منشور.</CardDescription>
         </CardHeader>
         <CardContent>
-          <ManagedForm action={upsertSiteContent} submitLabel="حفظ المحتوى">
-            <div className="admin-form-grid">
-              <select name="contentType" defaultValue="hero" aria-label="نوع المحتوى">
-                <option value="hero">واجهة رئيسية</option>
-                <option value="welcome">نص ترحيبي</option>
-                <option value="banner">بانر</option>
-                <option value="announcement">إعلان أو تنبيه</option>
-                <option value="alert">رسالة عامة</option>
-                <option value="carousel">شريحة متحركة</option>
-                <option value="faq">سؤال شائع</option>
-                <option value="contact">بيانات تواصل</option>
-                <option value="social">رابط تواصل اجتماعي</option>
-                <option value="footer">تذييل الموقع</option>
-                <option value="background">خلفية</option>
-                <option value="section_image">صورة قسم</option>
-              </select>
-              <Input name="key" required dir="ltr" defaultValue="home-hero" placeholder="home-hero" />
-              <Input name="group" required dir="ltr" defaultValue="homepage" placeholder="homepage" />
-              <Input name="title" placeholder="العنوان الإداري" />
-              <Input name="heading" required placeholder="العنوان الظاهر" />
-              <Input name="buttonText" placeholder="نص الزر" />
-              <Input name="buttonUrl" dir="ltr" placeholder="/learn" />
-              <Input name="secondaryButtonText" placeholder="نص الزر الإضافي" />
-              <Input name="secondaryButtonUrl" dir="ltr" placeholder="/about أو https://..." />
-              <select name="styleVariant" defaultValue="default" aria-label="نمط العرض">
-                <option value="default">افتراضي</option>
-                <option value="primary">رئيسي</option>
-                <option value="warning">تحذير</option>
-                <option value="danger">خطر</option>
-                <option value="success">نجاح</option>
-                <option value="muted">هادئ</option>
-              </select>
-              <select name="imageMediaId" defaultValue="" aria-label="صورة المحتوى">
-                <option value="">بلا صورة</option>
-                {data.media.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.originalName}
-                  </option>
-                ))}
-              </select>
-              <select name="status" defaultValue="draft" aria-label="الحالة">
-                <option value="draft">مسودة</option>
-                <option value="published">منشور</option>
-                <option value="archived">مؤرشف</option>
-              </select>
-              <Input name="sortOrder" type="number" min="0" defaultValue="0" placeholder="الترتيب" />
-              <Input name="startsAt" type="datetime-local" aria-label="بداية العرض" />
-              <Input name="endsAt" type="datetime-local" aria-label="نهاية العرض" />
-              <label>
-                <input type="checkbox" name="isVisible" defaultChecked /> ظاهر
-              </label>
-            </div>
-            <Textarea name="text" required maxLength={5000} placeholder="النص الظاهر للزائر" />
-            <Textarea name="secondaryText" maxLength={2000} placeholder="نص إضافي أو تفاصيل" />
-          </ManagedForm>
+          <SiteContentForm action={upsertSiteContent} media={data.media} />
         </CardContent>
       </Card>
       <Card>
@@ -1801,9 +2076,60 @@ function CmsPanel({ data }: { data: Data }) {
                 </span>
               </div>
               <Status value={item.status} />
+              <Badge>{item.isVisible ? 'ظاهر' : 'مخفي'}</Badge>
               <Button variant="outline" render={<Link href={`/admin/cms/${item.id}/preview`} />}>
                 معاينة
               </Button>
+              <details>
+                <summary>تحرير المحتوى</summary>
+                <SiteContentForm action={upsertSiteContent} media={data.media} item={item} />
+              </details>
+              <ManagedForm
+                compact
+                action={(form) =>
+                  toggleSiteContentVisibility(item.id, String(form.get('reason') ?? ''))
+                }
+                submitLabel={item.isVisible ? 'إخفاء' : 'إظهار'}
+                confirm="سيتم تحديث ظهور العنصر وتسجيل نسخة جديدة."
+              >
+                <Input name="reason" required minLength={5} placeholder="سبب تغيير الظهور" />
+              </ManagedForm>
+              {item.status !== 'published' && (
+                <ManagedForm
+                  compact
+                  action={(form) =>
+                    setSiteContentStatus(item.id, 'published', String(form.get('reason') ?? ''))
+                  }
+                  submitLabel="نشر"
+                  confirm="سيظهر العنصر للمستخدمين إذا كان مفعّل الظهور وضمن نافذة العرض."
+                >
+                  <Input name="reason" required minLength={5} placeholder="سبب النشر" />
+                </ManagedForm>
+              )}
+              {item.status === 'published' && (
+                <ManagedForm
+                  compact
+                  action={(form) =>
+                    setSiteContentStatus(item.id, 'draft', String(form.get('reason') ?? ''))
+                  }
+                  submitLabel="إلغاء النشر"
+                  confirm="سيعود العنصر إلى المسودة ولن يظهر للمستخدمين."
+                >
+                  <Input name="reason" required minLength={5} placeholder="سبب إلغاء النشر" />
+                </ManagedForm>
+              )}
+              {item.status !== 'archived' && (
+                <ManagedForm
+                  compact
+                  action={(form) =>
+                    setSiteContentStatus(item.id, 'archived', String(form.get('reason') ?? ''))
+                  }
+                  submitLabel="أرشفة"
+                  confirm="سيتم إخفاء العنصر وأرشفته مع الاحتفاظ بجميع نسخه."
+                >
+                  <Input name="reason" required minLength={5} placeholder="سبب الأرشفة" />
+                </ManagedForm>
+              )}
             </div>
           ))}
           {!data.siteContent.length && <Empty text="لا يوجد محتوى عام مُدار بعد." />}
@@ -1842,6 +2168,153 @@ function CmsPanel({ data }: { data: Data }) {
     </div>
   )
 }
+
+function SiteContentForm({
+  action,
+  media,
+  item,
+}: {
+  action: FormAction
+  media: Data['media']
+  item?: Data['siteContent'][number]
+}) {
+  const content = item?.content ?? null
+  const contentType = stringFromRecord(content, 'type') || 'hero'
+  return (
+    <ManagedForm
+      action={action}
+      submitLabel={item ? 'حفظ تعديل محتوى الواجهة' : 'حفظ المحتوى'}
+      confirm={item ? 'سيتم حفظ نسخة جديدة مع الاحتفاظ بتاريخ التعديلات.' : undefined}
+    >
+      <div className="admin-form-grid">
+        <select name="contentType" defaultValue={contentType} aria-label="نوع المحتوى">
+          <option value="hero">واجهة رئيسية</option>
+          <option value="welcome">نص ترحيبي</option>
+          <option value="banner">بانر</option>
+          <option value="announcement">إعلان أو تنبيه</option>
+          <option value="alert">رسالة عامة</option>
+          <option value="carousel">شريحة متحركة</option>
+          <option value="faq">سؤال شائع</option>
+          <option value="contact">بيانات تواصل</option>
+          <option value="social">رابط تواصل اجتماعي</option>
+          <option value="footer">تذييل الموقع</option>
+          <option value="background">خلفية</option>
+          <option value="section_image">صورة قسم</option>
+        </select>
+        <Input
+          name="key"
+          required
+          dir="ltr"
+          readOnly={Boolean(item)}
+          defaultValue={item?.key ?? 'home-hero'}
+          placeholder="home-hero"
+        />
+        <Input
+          name="group"
+          required
+          dir="ltr"
+          defaultValue={item?.group ?? 'homepage'}
+          placeholder="homepage"
+        />
+        <Input name="title" defaultValue={item?.title ?? ''} placeholder="العنوان الإداري" />
+        <Input
+          name="heading"
+          defaultValue={stringFromRecord(content, 'heading')}
+          placeholder="العنوان الظاهر"
+        />
+        <Input
+          name="buttonText"
+          defaultValue={stringFromRecord(content, 'buttonText')}
+          placeholder="نص الزر"
+        />
+        <Input
+          name="buttonUrl"
+          dir="ltr"
+          defaultValue={stringFromRecord(content, 'buttonUrl')}
+          placeholder="/learn"
+        />
+        <Input
+          name="secondaryButtonText"
+          defaultValue={stringFromRecord(content, 'secondaryButtonText')}
+          placeholder="نص الزر الإضافي"
+        />
+        <Input
+          name="secondaryButtonUrl"
+          dir="ltr"
+          defaultValue={stringFromRecord(content, 'secondaryButtonUrl')}
+          placeholder="/about أو https://..."
+        />
+        <select
+          name="styleVariant"
+          defaultValue={stringFromRecord(content, 'styleVariant') || 'default'}
+          aria-label="نمط العرض"
+        >
+          <option value="default">افتراضي</option>
+          <option value="primary">رئيسي</option>
+          <option value="warning">تحذير</option>
+          <option value="danger">خطر</option>
+          <option value="success">نجاح</option>
+          <option value="muted">هادئ</option>
+        </select>
+        <select
+          name="imageMediaId"
+          defaultValue={stringFromRecord(content, 'imageMediaId')}
+          aria-label="صورة المحتوى"
+        >
+          <option value="">بلا صورة</option>
+          {media
+            .filter((asset) => asset.mediaType.startsWith('image/'))
+            .map((asset) => (
+              <option key={asset.id} value={asset.id}>
+                {asset.title || asset.originalName}
+              </option>
+            ))}
+        </select>
+        <select name="status" defaultValue={item?.status ?? 'draft'} aria-label="الحالة">
+          <option value="draft">مسودة</option>
+          <option value="scheduled">مجدول</option>
+          <option value="published">منشور</option>
+          <option value="archived">مؤرشف</option>
+        </select>
+        <Input
+          name="sortOrder"
+          type="number"
+          min="0"
+          defaultValue={item?.sortOrder ?? 0}
+          placeholder="الترتيب"
+        />
+        <Input
+          name="startsAt"
+          type="datetime-local"
+          defaultValue={localInputDate(item?.startsAt ?? null)}
+          aria-label="بداية العرض"
+        />
+        <Input
+          name="endsAt"
+          type="datetime-local"
+          defaultValue={localInputDate(item?.endsAt ?? null)}
+          aria-label="نهاية العرض"
+        />
+        <label>
+          <input type="checkbox" name="isVisible" defaultChecked={item?.isVisible ?? true} /> ظاهر
+        </label>
+      </div>
+      <Textarea
+        name="text"
+        maxLength={5000}
+        defaultValue={stringFromRecord(content, 'text')}
+        placeholder="النص الظاهر للزائر"
+      />
+      <Textarea
+        name="secondaryText"
+        maxLength={2000}
+        defaultValue={stringFromRecord(content, 'secondaryText')}
+        placeholder="نص إضافي أو تفاصيل"
+      />
+    </ManagedForm>
+  )
+}
+
 
 function MediaPanel({ data }: { data: Data }) {
   const router = useRouter()
@@ -2345,7 +2818,7 @@ function BackupActions() {
       <CardHeader>
         <CardTitle>النسخة الاحتياطية الكاملة</CardTitle>
         <CardDescription>
-          أنشئ نسخة ZIP قابلة للحفظ أو أرسلها مباشرة إلى enaad4786@gmail.com. إذا كان الحجم كبيرًا، تصل الرسالة برابط تنزيل آمن صالح 7 أيام.
+          أنشئ نسخة ZIP قابلة للحفظ أو أرسلها مباشرة إلى enaadx@gmail.com. إذا كان الحجم كبيرًا، تصل الرسالة برابط تنزيل آمن صالح 7 أيام.
         </CardDescription>
       </CardHeader>
       <CardContent className="admin-stack-sm">
@@ -2355,7 +2828,7 @@ function BackupActions() {
             تنزيل نسخة ZIP كاملة
           </Button>
           <Button type="button" variant="outline" disabled={pending} onClick={email}>
-            إنشاء وإرسال إلى enaad4786@gmail.com
+            إنشاء وإرسال إلى enaadx@gmail.com
           </Button>
         </div>
       </CardContent>

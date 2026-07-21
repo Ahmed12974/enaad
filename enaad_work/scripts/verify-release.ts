@@ -67,34 +67,27 @@ async function verifyRelease() {
   const missingBackupEnvironment = [
     !process.env.RESEND_API_KEY && 'RESEND_API_KEY',
     !process.env.BLOB_READ_WRITE_TOKEN && 'BLOB_READ_WRITE_TOKEN',
+    !emailFrom && 'EMAIL_FROM',
   ].filter(Boolean)
   if (missingBackupEnvironment.length) {
-    console.warn(
-      `Backup delivery is not fully configured yet: ${missingBackupEnvironment.join(', ')}. The website build will continue, and the backup page will show a clear setup error until these values are added.`,
-    )
+    throw new Error(`Missing backup delivery configuration: ${missingBackupEnvironment.join(', ')}`)
   }
-
-  if (!emailFrom) {
-    console.warn(
-      'EMAIL_FROM is not configured. Backup emails will use onboarding@resend.dev, which Resend allows only when the recipient is the email address associated with the Resend account.',
+  const emailFromAddress = emailFrom.match(/<([^<>]+)>$/)?.[1] ?? emailFrom
+  const emailFromDomain = emailFromAddress.split('@')[1]?.toLowerCase()
+  const unsupportedSenderDomains = new Set([
+    'gmail.com',
+    'googlemail.com',
+    'outlook.com',
+    'hotmail.com',
+    'live.com',
+    'yahoo.com',
+    'icloud.com',
+    'resend.dev',
+  ])
+  if (!emailFromDomain || unsupportedSenderDomains.has(emailFromDomain)) {
+    throw new Error(
+      'EMAIL_FROM must use a verified custom Resend domain to deliver backups to the administrator.',
     )
-  } else {
-    const emailFromAddress = emailFrom.match(/<([^<>]+)>$/)?.[1] ?? emailFrom
-    const emailFromDomain = emailFromAddress.split('@')[1]?.toLowerCase()
-    const unsupportedSenderDomains = new Set([
-      'gmail.com',
-      'googlemail.com',
-      'outlook.com',
-      'hotmail.com',
-      'live.com',
-      'yahoo.com',
-      'icloud.com',
-    ])
-    if (!emailFromDomain || unsupportedSenderDomains.has(emailFromDomain)) {
-      console.warn(
-        'EMAIL_FROM is not a usable Resend sender. Backup emails will fall back to onboarding@resend.dev.',
-      )
-    }
   }
 
   const [adminAccount] = await db
@@ -111,7 +104,7 @@ async function verifyRelease() {
     console.info('Release verification: administrator account will be promoted automatically on first login.')
   }
 
-  console.info('Release verification passed: database, branding, admin policy, and math question banks are ready.')
+  console.info('Release verification passed: database, branding, admin policy, backup delivery, and math question banks are ready.')
 }
 
 verifyRelease()

@@ -174,12 +174,17 @@ function ManagedContentBlocks({ content }: { content?: Record<string, Record<str
     <section className="admin-card-grid" aria-label="محتوى الموقع المنشور">
       {entries.map(([key, item]) => {
         const type = typeof item.type === 'string' ? item.type : 'welcome'
+        const styleVariant = typeof item.styleVariant === 'string' ? item.styleVariant : 'default'
         const heading = typeof item.heading === 'string' ? item.heading : ''
         const text = typeof item.text === 'string' ? item.text : ''
+        const secondaryText = typeof item.secondaryText === 'string' ? item.secondaryText : ''
+        const buttonText = typeof item.buttonText === 'string' ? item.buttonText : ''
+        const secondaryButtonText =
+          typeof item.secondaryButtonText === 'string' ? item.secondaryButtonText : ''
         const mediaId = typeof item.imageMediaId === 'string' ? item.imageMediaId : null
         if (type === 'faq')
           return (
-            <Card key={key}>
+            <Card key={key} className={`cms-block cms-${type} cms-variant-${styleVariant}`}>
               <CardContent>
                 <details>
                   <summary>{heading}</summary>
@@ -189,7 +194,7 @@ function ManagedContentBlocks({ content }: { content?: Record<string, Record<str
             </Card>
           )
         return (
-          <Card key={key} className={`cms-block cms-${type}`}>
+          <Card key={key} className={`cms-block cms-${type} cms-variant-${styleVariant}`}>
             {mediaId && (
               <Image
                 src={`/api/media/${encodeURIComponent(mediaId)}`}
@@ -204,12 +209,20 @@ function ManagedContentBlocks({ content }: { content?: Record<string, Record<str
               {heading && <CardTitle>{heading}</CardTitle>}
               {text && <CardDescription>{text}</CardDescription>}
             </CardHeader>
-            {(typeof item.buttonText === 'string' || typeof item.secondaryText === 'string') && (
+            {(buttonText || secondaryButtonText || secondaryText) && (
               <CardContent className="admin-row">
-                {typeof item.buttonText === 'string' && item.buttonText && (
-                  <Button render={<Link href={safeCmsHref(item.buttonUrl, '/')} />}>{item.buttonText}</Button>
+                {buttonText && (
+                  <Button render={<Link href={safeCmsHref(item.buttonUrl, '/')} />}>{buttonText}</Button>
                 )}
-                {typeof item.secondaryText === 'string' && item.secondaryText && <p>{item.secondaryText}</p>}
+                {secondaryButtonText && (
+                  <Button
+                    variant="outline"
+                    render={<Link href={safeCmsHref(item.secondaryButtonUrl, '/')} />}
+                  >
+                    {secondaryButtonText}
+                  </Button>
+                )}
+                {secondaryText && <p>{secondaryText}</p>}
               </CardContent>
             )}
           </Card>
@@ -220,18 +233,28 @@ function ManagedContentBlocks({ content }: { content?: Record<string, Record<str
 }
 
 function safeCmsHref(value: unknown, fallback: string) {
-  return typeof value === 'string' && value.startsWith('/') && !value.startsWith('//') ? value : fallback
+  if (typeof value !== 'string') return fallback
+  const trimmed = value.trim()
+  if (trimmed.startsWith('/') && !trimmed.startsWith('//')) return trimmed
+  if (/^https:\/\/[a-z0-9.-]+(?:[/:?#]|$)/i.test(trimmed)) return trimmed
+  return fallback
 }
 
 function ManagedHero({ content }: { content: Record<string, unknown> }) {
   const text = (key: string, fallback: string) =>
     typeof content[key] === 'string' && content[key].trim() ? content[key].trim() : fallback
-  const href = (key: string, fallback: string) => {
-    const value = text(key, fallback)
-    return value.startsWith('/') && !value.startsWith('//') ? value : fallback
-  }
   const preferred = (primary: string, legacy: string, fallback: string) =>
     text(primary, '') || text(legacy, fallback)
+  const mediaId = typeof content.imageMediaId === 'string' ? content.imageMediaId : null
+  const legacySecondaryButton =
+    typeof content.secondaryUrl === 'string' && !text('secondaryButtonText', '')
+  const secondaryDetails = legacySecondaryButton ? '' : text('secondaryText', '')
+  const secondaryButtonLabel =
+    text('secondaryButtonText', '') ||
+    (legacySecondaryButton ? text('secondaryText', '') : '') ||
+    'مراجعة سريعة'
+  const primaryUrl = safeCmsHref(content.buttonUrl ?? content.primaryUrl, '/add')
+  const secondaryUrl = safeCmsHref(content.secondaryButtonUrl ?? content.secondaryUrl, '/quiz')
   return (
     <section className="hero cms-managed-hero">
       <div>
@@ -242,15 +265,26 @@ function ManagedHero({ content }: { content: Record<string, unknown> }) {
           <em>{text('emphasis', 'خطوة بعد خطوة.')}</em>
         </h1>
         <p>{preferred('text', 'description', 'واصل التعلم وحقق أهدافك اليومية.')}</p>
+        {secondaryDetails && <p>{secondaryDetails}</p>}
         <div className="hero-actions">
-          <Button render={<Link href={href('buttonUrl', href('primaryUrl', '/add'))} />}>
+          <Button render={<Link href={primaryUrl} />}>
             <Plus /> {preferred('buttonText', 'primaryText', 'ابدأ الآن')}
           </Button>
-          <Button variant="outline" render={<Link href={href('secondaryUrl', '/quiz')} />}>
-            <Brain /> {text('secondaryText', 'مراجعة سريعة')}
+          <Button variant="outline" render={<Link href={secondaryUrl} />}>
+            <Brain /> {secondaryButtonLabel}
           </Button>
         </div>
       </div>
+      {mediaId && (
+        <Image
+          src={`/api/media/${encodeURIComponent(mediaId)}`}
+          alt={preferred('heading', 'title', 'واجهة الموقع')}
+          width={720}
+          height={720}
+          priority
+          className="cms-hero-image"
+        />
+      )}
     </section>
   )
 }
@@ -525,7 +559,7 @@ function Add({ start }: { start: React.TransitionStartFunction }) {
                   })
                 }
               >
-                إضافة ال��ل إلى البنك
+                إضافة الكل إلى البنك
               </Button>
             </div>
           )}

@@ -6,10 +6,15 @@ import {
   achievements,
   auditLogs,
   badges,
+  categories,
   challengeParticipants,
   challengeResults,
+  competitionCategories,
+  competitionParticipants,
+  competitions,
   educationalSections,
   levels,
+  mathSections,
   media,
   platformSettings,
   promotionRules,
@@ -58,6 +63,7 @@ export const adminSections = [
   'sections',
   'content',
   'challenges',
+  'competitions',
   'promotions',
   'badges',
   'cms',
@@ -97,6 +103,7 @@ export async function getAdminConsoleData(filters: AdminFilters = {}, section: A
   ].includes(section)
   const needsContent = section === 'overview' || section === 'content' || section === 'users'
   const needsChallenges = section === 'challenges' || section === 'users' || section === 'statistics'
+  const needsCompetitions = section === 'competitions' || section === 'users' || section === 'statistics'
   const needsLevels = section === 'users' || section === 'promotions' || section === 'statistics'
   const needsBadges =
     section === 'overview' ||
@@ -520,6 +527,71 @@ export async function getAdminConsoleData(filters: AdminFilters = {}, section: A
     ),
   ])
 
+  const [competitionRows, competitionCategoryRows, competitionParticipantRows, platformCategoryRows, mathSectionRows] =
+    await Promise.all([
+      executeWhen(needsCompetitions, () =>
+        db.execute<{
+          id: number
+          title: string
+          description: string
+          scope: 'all' | 'en' | 'ar' | 'math'
+          sectionId: number | null
+          questionCount: number
+          xpReward: number
+          startsAt: Date | null
+          endsAt: Date | null
+          isActive: boolean
+          createdAt: Date
+          updatedAt: Date
+          participantCount: number
+          submittedCount: number
+        }>(sql`
+          select c.id, c.title, c.description, c.scope, c."sectionId", c."questionCount", c."xpReward",
+            c."startsAt", c."endsAt", c."isActive", c."createdAt", c."updatedAt",
+            count(p.id)::int as "participantCount",
+            count(p.id) filter (where p.status = 'submitted')::int as "submittedCount"
+          from competitions c
+          left join "competitionParticipants" p on p."competitionId" = c.id
+          group by c.id
+          order by c."createdAt" desc
+          limit 200
+        `),
+      ),
+      selectWhen(section === 'competitions', () =>
+        db.select().from(competitionCategories).orderBy(asc(competitionCategories.competitionId)),
+      ),
+      selectWhen(section === 'competitions', () =>
+        db
+          .select({
+            id: competitionParticipants.id,
+            competitionId: competitionParticipants.competitionId,
+            userId: competitionParticipants.userId,
+            userName: user.name,
+            userEmail: user.email,
+            status: competitionParticipants.status,
+            score: competitionParticipants.score,
+            correctAnswers: competitionParticipants.correctAnswers,
+            joinedAt: competitionParticipants.joinedAt,
+            submittedAt: competitionParticipants.submittedAt,
+          })
+          .from(competitionParticipants)
+          .innerJoin(user, eq(user.id, competitionParticipants.userId))
+          .orderBy(desc(competitionParticipants.joinedAt))
+          .limit(1_000),
+      ),
+      selectWhen(section === 'competitions', () =>
+        db
+          .select()
+          .from(categories)
+          .where(and(eq(categories.scope, 'platform'), isNull(categories.userId)))
+          .orderBy(asc(categories.language), asc(categories.sortOrder), asc(categories.name))
+          .limit(500),
+      ),
+      selectWhen(section === 'competitions', () =>
+        db.select().from(mathSections).orderBy(asc(mathSections.sortOrder), asc(mathSections.name)).limit(200),
+      ),
+    ])
+
   const [settingRows, mediaTotalRows, ruleExecutionRows] = await Promise.all([
     selectWhen(section === 'settings' || section === 'media', () =>
       db.select().from(platformSettings).where(eq(platformSettings.key, 'general')).limit(1),
@@ -662,6 +734,11 @@ export async function getAdminConsoleData(filters: AdminFilters = {}, section: A
     sections: sectionRows,
     contents: contentRows,
     challenges: challengeRows,
+    competitions: competitionRows,
+    competitionCategories: competitionCategoryRows,
+    competitionParticipants: competitionParticipantRows,
+    platformCategories: platformCategoryRows,
+    mathSections: mathSectionRows,
     levels: levelRows,
     rules: ruleRows,
     ruleExecutions: ruleExecutionRows,

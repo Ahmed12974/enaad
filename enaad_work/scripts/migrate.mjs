@@ -90,7 +90,6 @@ try {
   await applyMigration('0010-audit-outcomes', ['drizzle/0010_audit_outcomes.sql'])
   await applyMigration('0011-rate-limit-repair', ['drizzle/0011_rate_limit_repair.sql'])
   await applyMigration('0012-academy-brand', ['drizzle/0012_academy_brand.sql'])
-  await applyMigration('0013-admin-email-transfer', ['drizzle/0013_admin_email_transfer.sql'])
 
   const validation = await client.query(`select
     to_regclass('public."user"') is not null as "userTable",
