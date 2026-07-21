@@ -80,7 +80,6 @@ const PUBLIC_OR_TEST_EMAIL_DOMAINS = new Set([
   'live.com',
   'yahoo.com',
   'icloud.com',
-  'resend.dev',
 ])
 
 function validEmailFrom(value: string | undefined) {
@@ -267,7 +266,7 @@ async function listSiteBlobs(token: string) {
   return blobs
 }
 
-async function buildFullBackup(actor = await requireSoleAdmin()) {
+async function buildFullBackup(actor: Awaited<ReturnType<typeof requireSoleAdmin>>) {
   const token = process.env.BLOB_READ_WRITE_TOKEN?.trim()
   if (!token) {
     throw new Error('BLOB_READ_WRITE_TOKEN غير مهيأ؛ لا يمكن تضمين ملفات الموقع في النسخة الكاملة.')
@@ -455,7 +454,7 @@ export async function createAndEmailBackup() {
     return {
       ok: false,
       message:
-        'EMAIL_FROM يجب أن يكون عنوانًا من نطاقك الموثّق في Resend، وليس Gmail أو resend.dev.',
+        'EMAIL_FROM يجب أن يكون عنوانًا صالحًا في Resend. للاختبار استخدم Lughati <onboarding@resend.dev>، وللإرسال العام استخدم نطاقًا موثّقًا.',
       records: 0,
     }
 
