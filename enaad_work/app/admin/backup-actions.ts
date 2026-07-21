@@ -72,7 +72,7 @@ function sha256(data: Buffer | string) {
   return createHash('sha256').update(data).digest('hex')
 }
 
-const PUBLIC_OR_TEST_EMAIL_DOMAINS = new Set([
+const PUBLIC_EMAIL_DOMAINS = new Set([
   'gmail.com',
   'googlemail.com',
   'outlook.com',
@@ -80,23 +80,27 @@ const PUBLIC_OR_TEST_EMAIL_DOMAINS = new Set([
   'live.com',
   'yahoo.com',
   'icloud.com',
-  'resend.dev',
 ])
 
-function validEmailFrom(value: string | undefined) {
+const RESEND_TEST_SENDER = `${SITE_NAME} <onboarding@resend.dev>`
+
+function resolveBackupEmailFrom(value: string | undefined) {
   const normalized = value?.trim()
-  if (!normalized) return null
+  if (!normalized) return RESEND_TEST_SENDER
   if (
     !/^(?:[^<>]+\s*)?<[^<>\s@]+@[^<>\s@]+\.[^<>\s@]+>$|^[^<>\s@]+@[^<>\s@]+\.[^<>\s@]+$/.test(
       normalized,
     )
   ) {
-    return null
+    return RESEND_TEST_SENDER
   }
 
   const address = normalized.match(/<([^<>]+)>$/)?.[1] ?? normalized
   const domain = address.split('@')[1]?.toLowerCase()
-  if (!domain || PUBLIC_OR_TEST_EMAIL_DOMAINS.has(domain)) return null
+  if (!domain || PUBLIC_EMAIL_DOMAINS.has(domain)) return RESEND_TEST_SENDER
+  if (domain === 'resend.dev' && address.toLowerCase() !== 'onboarding@resend.dev') {
+    return RESEND_TEST_SENDER
+  }
   return normalized
 }
 
@@ -449,15 +453,8 @@ export async function createBackupDownload() {
 export async function createAndEmailBackup() {
   const actor = await requireSoleAdmin()
   const apiKey = process.env.RESEND_API_KEY?.trim()
-  const from = validEmailFrom(process.env.EMAIL_FROM)
+  const from = resolveBackupEmailFrom(process.env.EMAIL_FROM)
   if (!apiKey) return { ok: false, message: 'RESEND_API_KEY غير مهيأ.', records: 0 }
-  if (!from)
-    return {
-      ok: false,
-      message:
-        'EMAIL_FROM يجب أن يكون عنوانًا من نطاقك الموثّق في Resend، وليس Gmail أو resend.dev.',
-      records: 0,
-    }
 
   const backup = await buildFullBackup(actor)
   const context = await getAuditRequestContext()
