@@ -271,7 +271,9 @@ async function listSiteBlobs(token: string) {
   return blobs
 }
 
-async function buildFullBackup(actor = await requireSoleAdmin()) {
+async function buildFullBackup(
+  actor: Awaited<ReturnType<typeof requireSoleAdmin>>,
+) {
   const token = process.env.BLOB_READ_WRITE_TOKEN?.trim()
   if (!token) {
     throw new Error('BLOB_READ_WRITE_TOKEN غير مهيأ؛ لا يمكن تضمين ملفات الموقع في النسخة الكاملة.')
