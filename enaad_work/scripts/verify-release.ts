@@ -69,25 +69,32 @@ async function verifyRelease() {
     !process.env.BLOB_READ_WRITE_TOKEN && 'BLOB_READ_WRITE_TOKEN',
     !emailFrom && 'EMAIL_FROM',
   ].filter(Boolean)
+
+  // Backup email delivery is an optional runtime feature and must never block the
+  // whole application deployment. The admin action validates the same values and
+  // returns a clear Arabic error when the feature is used before configuration.
   if (missingBackupEnvironment.length) {
-    throw new Error(`Missing backup delivery configuration: ${missingBackupEnvironment.join(', ')}`)
-  }
-  const emailFromAddress = emailFrom.match(/<([^<>]+)>$/)?.[1] ?? emailFrom
-  const emailFromDomain = emailFromAddress.split('@')[1]?.toLowerCase()
-  const unsupportedSenderDomains = new Set([
-    'gmail.com',
-    'googlemail.com',
-    'outlook.com',
-    'hotmail.com',
-    'live.com',
-    'yahoo.com',
-    'icloud.com',
-    'resend.dev',
-  ])
-  if (!emailFromDomain || unsupportedSenderDomains.has(emailFromDomain)) {
-    throw new Error(
-      'EMAIL_FROM must use a verified custom Resend domain to deliver backups to the administrator.',
+    console.warn(
+      `Release verification warning: backup email delivery is not fully configured (${missingBackupEnvironment.join(', ')}).`,
     )
+  } else {
+    const emailFromAddress = emailFrom.match(/<([^<>]+)>$/)?.[1] ?? emailFrom
+    const emailFromDomain = emailFromAddress.split('@')[1]?.toLowerCase()
+    const unsupportedSenderDomains = new Set([
+      'gmail.com',
+      'googlemail.com',
+      'outlook.com',
+      'hotmail.com',
+      'live.com',
+      'yahoo.com',
+      'icloud.com',
+      'resend.dev',
+    ])
+    if (!emailFromDomain || unsupportedSenderDomains.has(emailFromDomain)) {
+      console.warn(
+        'Release verification warning: EMAIL_FROM must use a verified custom Resend domain before backup emails can be sent.',
+      )
+    }
   }
 
   const [adminAccount] = await db

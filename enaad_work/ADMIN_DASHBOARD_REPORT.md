@@ -35,7 +35,7 @@
 
 ## ما استُكمل
 
-- صلاحية المدير الوحيد `enaadx@gmail.com`: تطبيع بريد، توثيق، دور `admin`، حساب غير
+- صلاحية المدير الوحيد `enaad4786@gmail.com`: تطبيع بريد، توثيق، دور `admin`، حساب غير
   محظور أو معطل، وسجل `adminAllowlist` نشط؛ 401 لغياب الجلسة و403 لغياب الصلاحية.
 - حماية الصفحات والـActions والـAdmin APIs، ومنع أخذ `role` أو `isAdmin` أو هوية الفاعل
   من العميل، وتسجيل محاولات الرفض بلا أسرار.
@@ -130,19 +130,19 @@ cp .env.example .env.local
 pnpm db:migrate
 pnpm db:seed
 pnpm auth:diagnose --self-test
-pnpm admin:promote enaadx@gmail.com
+pnpm admin:promote enaad4786@gmail.com
 pnpm dev
 ```
 
-يجب إنشاء `enaadx@gmail.com` عبر Better Auth وتوثيق بريده أولًا. أمر الترقية يرفض أي
+يجب إنشاء `enaad4786@gmail.com` عبر Better Auth وتوثيق بريده أولًا. أمر الترقية يرفض أي
 بريد آخر، ويضيف الدور وسجل allowlist النشط مع Audit Log. لا يوجد تجاوز لتوثيق البريد.
 
 ## متغيرات البيئة
 
 - مطلوبة: `DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`,
   `NEXT_PUBLIC_APP_URL`, `AUTH_TRUSTED_ORIGINS`.
-- بحسب الميزة: `BLOB_READ_WRITE_TOKEN`, `RESEND_API_KEY`, و`EMAIL_FROM` من نطاق موثّق، مع المستلم الثابت `enaadx@gmail.com`.
-- `INITIAL_ADMIN_EMAIL` يظل `enaadx@gmail.com` فقط.
+- بحسب الميزة: `BLOB_READ_WRITE_TOKEN`, `RESEND_API_KEY`, و`EMAIL_FROM` من نطاق موثّق، مع المستلم الثابت `enaad4786@gmail.com`.
+- `INITIAL_ADMIN_EMAIL` يظل `enaad4786@gmail.com` فقط.
 - `E2E_ALLOW_ADMIN_FIXTURE=1` للاختبار المحلي المعزول فقط، وليس الإنتاج.
 
 ## النتائج الفعلية

@@ -73,7 +73,7 @@ test('the verified allowlisted sole administrator opens admin routes and APIs', 
   const databaseUrl = process.env.DATABASE_URL
   if (!databaseUrl) throw new Error('DATABASE_URL is required for the administrator E2E test.')
   const pool = new Pool({ connectionString: databaseUrl, max: 1 })
-  const email = 'enaadx@gmail.com'
+  const email = 'enaad4786@gmail.com'
   const password = `E2E-${randomUUID()}-aA9!`
   try {
     await pool.query(`delete from "adminAllowlist" where email = $1`, [email])

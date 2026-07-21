@@ -18,7 +18,7 @@ test('sole administrator completes content, CMS, rules, reports, media validatio
   if (!databaseUrl) throw new Error('DATABASE_URL is required for the administrator E2E test.')
   const pool = new Pool({ connectionString: databaseUrl, max: 1 })
   const suffix = `${testInfo.project.name}-${randomUUID()}`.replaceAll(/[^a-z0-9-]/gi, '').toLowerCase()
-  const email = 'enaadx@gmail.com'
+  const email = 'enaad4786@gmail.com'
   const password = `E2E-${randomUUID()}-aA9!`
   const sectionSlug = `e2e-${suffix}`.slice(0, 110)
   const firstSlug = `intro-${suffix}`.slice(0, 110)
