@@ -177,21 +177,23 @@ async function seed() {
       .where(
         and(
           sql`lower(trim(${user.email})) = ${SOLE_ADMIN_EMAIL}`,
-          eq(user.emailVerified, true),
           sql`${user.deletedAt} is null`,
         ),
       )
       .limit(1)
-    if (adminAccount && adminAccount.role !== 'admin') {
-      await tx.update(user).set({ role: 'admin', updatedAt: new Date() }).where(eq(user.id, adminAccount.id))
+    if (adminAccount && (adminAccount.role !== 'admin' || !adminAccount.emailVerified)) {
+      await tx
+        .update(user)
+        .set({ role: 'admin', emailVerified: true, updatedAt: new Date() })
+        .where(eq(user.id, adminAccount.id))
       await tx.insert(auditLogs).values({
         actorUserId: adminAccount.id,
         action: 'bootstrap_admin',
         entityType: 'user',
         entityId: adminAccount.id,
-        before: { role: adminAccount.role },
-        after: { role: 'admin', allowlistedEmail: SOLE_ADMIN_EMAIL },
-        reason: 'Secure seed promoted the verified sole administrator account.',
+        before: { role: adminAccount.role, emailVerified: adminAccount.emailVerified },
+        after: { role: 'admin', emailVerified: true, allowlistedEmail: SOLE_ADMIN_EMAIL },
+        reason: 'Secure seed synchronized the sole administrator account.',
       })
     }
 

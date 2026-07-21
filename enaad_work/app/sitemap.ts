@@ -1,6 +1,6 @@
 import type { MetadataRoute } from 'next'
 export default function sitemap(): MetadataRoute.Sitemap {
-  const base = process.env.NEXT_PUBLIC_APP_URL || 'https://lughati.app'
+  const base = process.env.NEXT_PUBLIC_APP_URL || 'https://academy-zayed.example'
   return ['/sign-in', '/sign-up'].map((url) => ({
     url: `${base}${url}`,
     lastModified: new Date(),

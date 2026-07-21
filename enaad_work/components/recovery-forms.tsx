@@ -356,8 +356,8 @@ function RecoveryLayout({
   return (
     <main className="recovery-page">
       <section className="recovery-copy">
-        <div className="brand-mark">لُ</div>
-        <p className="eyebrow">لُغتي • حماية رحلتك التعليمية</p>
+        <div className="brand-mark">ز</div>
+        <p className="eyebrow">أكاديمية زايد التعليمية • حماية رحلتك التعليمية</p>
         <h1 className="text-balance">حسابك آمن، وطريق العودة واضح.</h1>
         <p>روابط قصيرة العمر، استخدام واحد، وخصوصية لا تكشف بيانات حسابك.</p>
       </section>

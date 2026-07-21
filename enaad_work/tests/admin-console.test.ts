@@ -65,6 +65,8 @@ describe('secure administrative console domain', { concurrency: 1 }, () => {
         'drizzle/0008_rules_lifecycle.sql',
         'drizzle/0009_soft_delete_words.sql',
         'drizzle/0010_audit_outcomes.sql',
+        'drizzle/0011_rate_limit_repair.sql',
+        'drizzle/0012_academy_brand.sql',
       ].map((file) => readFile(resolve(process.cwd(), file), 'utf8')),
     )
     await client.exec(migrations.join('\n'))
@@ -686,9 +688,9 @@ describe('secure administrative console domain', { concurrency: 1 }, () => {
   test('persists validated platform settings and immutable CMS versions', async () => {
     const [setting] = await database
       .insert(platformSettings)
-      .values({ key: 'general', value: { siteName: 'لُغتي', defaultLanguage: 'ar' }, updatedBy: adminId })
+      .values({ key: 'general', value: { siteName: 'أكاديمية زايد التعليمية', defaultLanguage: 'ar' }, updatedBy: adminId })
       .returning()
-    assert.equal(setting?.value.siteName, 'لُغتي')
+    assert.equal(setting?.value.siteName, 'أكاديمية زايد التعليمية')
     const [content] = await database
       .insert(siteContent)
       .values({

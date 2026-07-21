@@ -81,6 +81,8 @@ describe('Better Auth PostgreSQL integration', { concurrency: 1 }, () => {
       readFile(resolve(process.cwd(), 'drizzle/0008_rules_lifecycle.sql'), 'utf8'),
       readFile(resolve(process.cwd(), 'drizzle/0009_soft_delete_words.sql'), 'utf8'),
       readFile(resolve(process.cwd(), 'drizzle/0010_audit_outcomes.sql'), 'utf8'),
+      readFile(resolve(process.cwd(), 'drizzle/0011_rate_limit_repair.sql'), 'utf8'),
+      readFile(resolve(process.cwd(), 'drizzle/0012_academy_brand.sql'), 'utf8'),
     ])
     await databaseClient.exec(migrations.join('\n'))
     database = drizzle(databaseClient, { schema })

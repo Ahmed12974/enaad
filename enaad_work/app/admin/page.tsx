@@ -1,6 +1,8 @@
 import { AdminConsole } from '@/components/admin/admin-console'
 import { getAdminConsoleData } from '@/lib/admin-console'
 
+export const maxDuration = 300
+
 type SearchParams = Promise<Record<string, string | string[] | undefined>>
 
 function single(value: string | string[] | undefined) {

@@ -16,7 +16,7 @@ export function GrowthCenter({ data }: { data: GrowthData }) {
     <main className="challenges-page">
       <section className="challenge-hero">
         <div>
-          <p className="eyebrow">تحديات لُغتي</p>
+          <p className="eyebrow">تحديات أكاديمية زايد التعليمية</p>
           <h1>
             ابدأ الآن.
             <br />

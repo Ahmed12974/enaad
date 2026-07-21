@@ -1,5 +1,5 @@
 {
-  "name": "lughati-learning-platform",
+  "name": "zayed-educational-academy",
   "version": "0.1.0",
   "private": true,
   "packageManager": "pnpm@10.28.2",
@@ -19,7 +19,8 @@
     "db:migrate": "node scripts/migrate.mjs",
     "db:seed": "node --import tsx scripts/seed.ts",
     "auth:diagnose": "node --import tsx scripts/auth-diagnostics.ts",
-    "admin:promote": "node --import tsx scripts/promote-admin.ts"
+    "admin:promote": "node --import tsx scripts/promote-admin.ts",
+    "release:verify": "node --import tsx scripts/verify-release.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",

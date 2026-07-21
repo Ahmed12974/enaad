@@ -150,7 +150,7 @@ test('sole administrator completes content, CMS, rules, reports, media validatio
       .locator('form')
       .filter({ has: page.getByPlaceholder('اسم الموقع') })
       .first()
-    await settingsForm.getByPlaceholder('اسم الموقع').fill(`لُغتي E2E ${suffix}`)
+    await settingsForm.getByPlaceholder('اسم الموقع').fill(`أكاديمية زايد التعليمية E2E ${suffix}`)
     await settingsForm.locator('[name="registrationEnabled"]').uncheck()
     await settingsForm.locator('[name="maintenanceMode"]').check()
     await settingsForm.locator('[name="maxUploadMb"]').fill('1')

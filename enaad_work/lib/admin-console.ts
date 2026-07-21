@@ -63,6 +63,7 @@ export const adminSections = [
   'cms',
   'media',
   'audit',
+  'backup',
   'settings',
 ] as const
 export type AdminSection = (typeof adminSections)[number]

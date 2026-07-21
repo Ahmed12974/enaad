@@ -2,6 +2,8 @@ import { notFound } from 'next/navigation'
 import { AdminConsole } from '@/components/admin/admin-console'
 import { adminSections, getAdminConsoleData, type AdminSection } from '@/lib/admin-console'
 
+export const maxDuration = 300
+
 type SearchParams = Promise<Record<string, string | string[] | undefined>>
 
 function single(value: string | string[] | undefined) {

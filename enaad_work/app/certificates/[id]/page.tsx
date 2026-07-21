@@ -30,16 +30,16 @@ export default async function CertificatePage({ params }: { params: Promise<{ id
       <article className="certificate-paper">
         <div className="certificate-inner">
           <header className="certificate-header">
-            <span>لُغتي</span>
+            <span>أكاديمية زايد التعليمية</span>
             <small>شهادة إنجاز موثقة</small>
           </header>
           {certificate.revokedAt && <p className="error">هذه الشهادة ملغاة ولا تُعد صالحة للتحقق.</p>}
-          <p className="certificate-kicker">تشهد منصة لُغتي بأن المتعلم</p>
+          <p className="certificate-kicker">تشهد أكاديمية زايد التعليمية بأن المتعلم</p>
           <h1>{session.user.name}</h1>
           <p className="certificate-copy">قد أتم بنجاح متطلبات الإنجاز</p>
           <h2>{certificate.title}</h2>
           <div className="certificate-seal">
-            <b>لُغتي</b>
+            <b>أكاديمية زايد التعليمية</b>
             <span>إنجاز</span>
           </div>
           <footer>

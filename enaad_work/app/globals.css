@@ -2535,6 +2535,12 @@ body {
   height: 52px;
   font-size: 24px;
 }
+.logo b {
+  flex: 1;
+  min-width: 0;
+  font-size: 20px;
+  line-height: 1.35;
+}
 .logo small {
   display: block;
   width: 100%;

@@ -598,7 +598,7 @@ async function exportData(list: Array<W | S>, sentences: boolean, format: 'csv' 
     ? list.map((item) => ('sentence' in item ? [item.sentence, item.translation] : ['', '']))
     : list.map((item) => ('word' in item ? [item.word, item.meaning] : ['', '']))
   const safeRows = rows.map((row) => row.map(neutralizeSpreadsheetCell))
-  const name = `lughati-${sentences ? 'sentences' : 'words'}-${new Date().toISOString().slice(0, 10)}`
+  const name = `zayed-academy-${sentences ? 'sentences' : 'words'}-${new Date().toISOString().slice(0, 10)}`
   if (format === 'csv') {
     const csv =
       '\uFEFF' +
@@ -644,7 +644,7 @@ function printArabicPdf(headers: string[], rows: unknown[][], name: string) {
     '@page{size:A4 landscape;margin:14mm}body{font-family:Tahoma,Arial,sans-serif;color:#173d34}h1{border-bottom:3px solid #d9a928;padding-bottom:12px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #dedbd0;padding:9px;text-align:right;overflow-wrap:anywhere}th{background:#123c32;color:#fff}tr:nth-child(even){background:#f5f2e9}'
   target.head.append(style)
   const heading = target.createElement('h1')
-  heading.textContent = 'بنك التعلّم — لُغتي'
+  heading.textContent = 'بنك التعلّم — أكاديمية زايد التعليمية'
   target.body.append(heading)
   const table = target.createElement('table')
   const headRow = table.createTHead().insertRow()

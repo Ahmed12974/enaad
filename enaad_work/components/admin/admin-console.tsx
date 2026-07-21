@@ -88,6 +88,7 @@ const navigation = [
   ['cms', 'محتوى واجهة الموقع', FileText],
   ['media', 'الوسائط والصور', ImageIcon],
   ['audit', 'سجل العمليات', ShieldCheck],
+  ['backup', 'النسخ الاحتياطي', RefreshCw],
   ['settings', 'الإعدادات', Settings],
 ] as const
 
@@ -96,7 +97,7 @@ export function AdminConsole({ data, section }: { data: Data; section: AdminSect
     <main className="admin-console" dir="rtl">
       <header className="admin-console-header">
         <div>
-          <p className="eyebrow">مركز إدارة لُغتي</p>
+          <p className="eyebrow">مركز إدارة أكاديمية زايد التعليمية</p>
           <h1>لوحة التحكم</h1>
           <p>إدارة المنصة والبيانات والصلاحيات من مساحة واحدة آمنة.</p>
         </div>
@@ -131,6 +132,7 @@ export function AdminConsole({ data, section }: { data: Data; section: AdminSect
           {section === 'cms' && <CmsPanel data={data} />}
           {section === 'media' && <MediaPanel data={data} />}
           {section === 'audit' && <AuditPanel data={data} />}
+          {section === 'backup' && <BackupPanel />}
           {section === 'settings' && <SettingsPanel data={data} />}
         </section>
       </div>
@@ -2215,7 +2217,7 @@ function SettingsPanel({ data }: { data: Data }) {
                 name="siteName"
                 required
                 minLength={2}
-                defaultValue={text('siteName', 'لُغتي')}
+                defaultValue={text('siteName', 'أكاديمية زايد التعليمية')}
                 placeholder="اسم الموقع"
               />
               <Input
@@ -2297,6 +2299,18 @@ function SettingsPanel({ data }: { data: Data }) {
           صلاحية isAdmin قابلة للحقن من الواجهة.
         </AlertDescription>
       </Alert>
+    </div>
+  )
+}
+
+function BackupPanel() {
+  return (
+    <div className="admin-stack">
+      <Alert>
+        <AlertDescription>
+          النسخة الكاملة تشمل بيانات المنصة وملفات Vercel Blob، وتستبعد كلمات المرور والجلسات والرموز السرية ومفاتيح البيئة.
+        </AlertDescription>
+      </Alert>
       <BackupActions />
     </div>
   )
@@ -2309,12 +2323,7 @@ function BackupActions() {
     startTransition(async () => {
       try {
         const response = await createBackupDownload()
-        const url = URL.createObjectURL(new Blob([response.payload], { type: 'application/json' }))
-        const link = document.createElement('a')
-        link.href = url
-        link.download = response.filename
-        link.click()
-        URL.revokeObjectURL(url)
+        window.location.assign(response.downloadUrl)
         setResult({ ok: true, message: `${response.message} (${response.records} سجل)` })
       } catch (error) {
         setResult({ ok: false, message: error instanceof Error ? error.message : 'تعذر إنشاء النسخة.' })
@@ -2334,19 +2343,19 @@ function BackupActions() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>نسخة بيانات تشغيلية</CardTitle>
+        <CardTitle>النسخة الاحتياطية الكاملة</CardTitle>
         <CardDescription>
-          لا تستبدل نسخة PostgreSQL/Blob المشفرة؛ لا تحتوي أسرار المصادقة أو الجلسات.
+          أنشئ نسخة ZIP قابلة للحفظ أو أرسلها مباشرة إلى enaadx@gmail.com. إذا كان الحجم كبيرًا، تصل الرسالة برابط تنزيل آمن صالح 7 أيام.
         </CardDescription>
       </CardHeader>
       <CardContent className="admin-stack-sm">
         {result && <Feedback result={result} />}
         <div className="admin-row">
           <Button type="button" disabled={pending} onClick={download}>
-            تنزيل JSON
+            تنزيل نسخة ZIP كاملة
           </Button>
           <Button type="button" variant="outline" disabled={pending} onClick={email}>
-            إرسال للبريد المهيأ
+            إنشاء وإرسال إلى enaadx@gmail.com
           </Button>
         </div>
       </CardContent>

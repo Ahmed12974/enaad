@@ -89,6 +89,7 @@ try {
   await applyMigration('0009-soft-delete-words', ['drizzle/0009_soft_delete_words.sql'])
   await applyMigration('0010-audit-outcomes', ['drizzle/0010_audit_outcomes.sql'])
   await applyMigration('0011-rate-limit-repair', ['drizzle/0011_rate_limit_repair.sql'])
+  await applyMigration('0012-academy-brand', ['drizzle/0012_academy_brand.sql'])
 
   const validation = await client.query(`select
     to_regclass('public."user"') is not null as "userTable",

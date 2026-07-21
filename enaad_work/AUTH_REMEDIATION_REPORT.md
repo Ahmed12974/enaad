@@ -1,4 +1,4 @@
-# تقرير إصلاح المصادقة والأمان — مشروع لُغتي
+# تقرير إصلاح المصادقة والأمان — مشروع أكاديمية زايد التعليمية
 
 ## الحكم التنفيذي
 
@@ -133,7 +133,7 @@ defaultCookieAttributes: { sameSite: 'none', secure: true }
 | `DATABASE_POOL_MAX`, `DATABASE_SSL` | ضبط Pool وTLS                           | حسب المزود     |
 | `RESEND_API_KEY`, `EMAIL_FROM`      | تأكيد البريد والاسترداد                 | للرسائل        |
 | `BLOB_READ_WRITE_TOKEN`             | ملفات Vercel Blob الخاصة                | للملفات        |
-| `BACKUP_RECIPIENT_EMAIL`            | مستلم التصدير الإداري اليدوي            | اختياري        |
+| `EMAIL_FROM`                         | مرسل النسخة من نطاق موثّق في Resend       | إلزامي للنسخ |
 | `INITIAL_ADMIN_EMAIL`               | إدخال اختياري لأداة الترقية             | اختياري        |
 
 لا يحتوي التقرير أو `.env.example` على قيم أسرار حقيقية.

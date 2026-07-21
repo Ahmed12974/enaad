@@ -8,12 +8,13 @@ import { normalizeEmail } from '@/lib/normalization'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { SITE_NAME } from '@/lib/brand'
 
 export function AuthForm({
   signup = false,
   nextPath,
   registrationEnabled = true,
-  siteName = 'لُغتي',
+  siteName = SITE_NAME,
 }: {
   signup?: boolean
   nextPath?: string
@@ -59,7 +60,7 @@ export function AuthForm({
   return (
     <main className="auth-page">
       <section className="auth-copy">
-        <div className="brand-mark">لُ</div>
+        <div className="brand-mark">ز</div>
         <p className="eyebrow">{siteName} • حصيلتك بين يديك</p>
         <h1>
           كل كلمة تتعلمها

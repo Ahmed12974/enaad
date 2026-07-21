@@ -141,8 +141,7 @@ pnpm dev
 
 - مطلوبة: `DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`,
   `NEXT_PUBLIC_APP_URL`, `AUTH_TRUSTED_ORIGINS`.
-- بحسب الميزة: `BLOB_READ_WRITE_TOKEN`, `RESEND_API_KEY`, `EMAIL_FROM`,
-  `BACKUP_RECIPIENT_EMAIL`.
+- بحسب الميزة: `BLOB_READ_WRITE_TOKEN`, `RESEND_API_KEY`, و`EMAIL_FROM` من نطاق موثّق، مع المستلم الثابت `enaadx@gmail.com`.
 - `INITIAL_ADMIN_EMAIL` يظل `enaadx@gmail.com` فقط.
 - `E2E_ALLOW_ADMIN_FIXTURE=1` للاختبار المحلي المعزول فقط، وليس الإنتاج.
 

@@ -29,6 +29,7 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
+import { SITE_NAME } from '@/lib/brand'
 const links = [
   ['/', 'الرئيسية', House],
   ['/learn', 'الأقسام التعليمية', BookOpen],
@@ -75,9 +76,9 @@ export function AppShell({
     <div className="app-frame">
       <aside>
         <Link href="/" className="logo">
-          <span>لُ</span>
-          <b>لُغتي</b>
-          <small>منصة تعلم اللغات</small>
+          <span>ز</span>
+          <b>{SITE_NAME}</b>
+          <small>تعليم العربية والإنجليزية والرياضيات</small>
         </Link>
         <div className="profile-mini">
           <span>{name.slice(0, 1)}</span>
@@ -133,7 +134,7 @@ export function AppShell({
           </SheetTrigger>
           <SheetContent side="right" dir="rtl" className="mobile-menu-sheet">
             <SheetHeader>
-              <SheetTitle>كل أقسام لُغتي</SheetTitle>
+              <SheetTitle>كل أقسام {SITE_NAME}</SheetTitle>
               <SheetDescription>انتقل إلى أي خاصية أو سجّل الخروج من حسابك.</SheetDescription>
             </SheetHeader>
             <nav className="mobile-menu-links">

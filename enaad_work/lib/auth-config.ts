@@ -3,6 +3,7 @@ import { APIError, createAuthMiddleware } from 'better-auth/api'
 import { admin } from 'better-auth/plugins'
 import { sendRecoveryEmail } from '@/lib/recovery'
 import { normalizeEmail, redactSensitive } from '@/lib/security'
+import { SITE_NAME } from '@/lib/brand'
 
 export type AuthEnvironment = Record<string, string | undefined>
 
@@ -112,7 +113,7 @@ export function createAuthOptions({
     .map((value) => value.trim())
     .filter(Boolean)
   return {
-    appName: 'لُغتي',
+    appName: SITE_NAME,
     database,
     secret: runtime.secret,
     baseURL: runtime.baseURL,
@@ -132,7 +133,7 @@ export function createAuthOptions({
           async sendVerificationEmail({ user, url }) {
             await sendRecoveryEmail({
               to: user.email,
-              subject: 'تأكيد بريدك الإلكتروني في لُغتي',
+              subject: `تأكيد بريدك الإلكتروني في ${SITE_NAME}`,
               title: 'تأكيد البريد الإلكتروني',
               text: 'أكد بريدك حتى تتمكن الإدارة من منح حسابك صلاحيات موثوقة عند الحاجة.',
               actionLabel: 'تأكيد البريد',

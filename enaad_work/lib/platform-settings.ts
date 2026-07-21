@@ -1,4 +1,5 @@
 import { platformSettings } from '@/lib/db/schema'
+import { SITE_DESCRIPTION, SITE_NAME } from '@/lib/brand'
 
 export const MAX_UPLOAD_MB = 10
 
@@ -15,9 +16,8 @@ export type GeneralPlatformSettings = {
 }
 
 export const defaultPlatformSettings: GeneralPlatformSettings = {
-  siteName: 'لُغتي',
-  siteDescription:
-    'منصة متكاملة لحفظ الكلمات والعبارات العربية والإنجليزية، الدراسة بالنطق، الاختبارات والتحديات.',
+  siteName: SITE_NAME,
+  siteDescription: SITE_DESCRIPTION,
   timezone: 'Africa/Cairo',
   defaultLanguage: 'ar',
   arabicEnabled: true,

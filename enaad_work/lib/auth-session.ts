@@ -2,6 +2,7 @@ import { cache } from 'react'
 import { headers } from 'next/headers'
 import { and, eq, isNull } from 'drizzle-orm'
 import { auth } from '@/lib/auth'
+import { ensureSoleAdminTx, isSoleAdminEmail } from '@/lib/admin-bootstrap'
 import { getAuditRequestContext, writeAdminAudit } from '@/lib/admin-audit'
 import { db } from '@/lib/db'
 import { adminAllowlist, user, userAdminProfiles } from '@/lib/db/schema'
@@ -34,7 +35,20 @@ export const getCurrentUser = cache(async () => {
     .leftJoin(userAdminProfiles, eq(userAdminProfiles.userId, user.id))
     .where(and(eq(user.id, session.user.id), isNull(user.deletedAt)))
     .limit(1)
-  return record ?? null
+  if (!record) return null
+
+  if (isSoleAdminEmail(record.email) && !record.banned) {
+    const bootstrap = await db.transaction((tx) => ensureSoleAdminTx(tx, record))
+    if (bootstrap) {
+      return {
+        ...record,
+        role: bootstrap.role,
+        emailVerified: bootstrap.emailVerified,
+      }
+    }
+  }
+
+  return record
 })
 
 export async function requireUser() {

@@ -108,7 +108,7 @@ export async function requestRecoveryEmailVerification(emailValue: string) {
   const url = `${getAppUrl()}/account/verify-recovery?token=${encodeURIComponent(token)}`
   await sendRecoveryEmail({
     to: email,
-    subject: 'تأكيد بريدك الاحتياطي في لُغتي',
+    subject: 'تأكيد بريدك الاحتياطي في أكاديمية زايد التعليمية',
     title: 'تأكيد البريد الاحتياطي',
     text: 'افتح الصفحة ثم اضغط زر التأكيد لاستخدام هذا البريد في استرداد حسابك.',
     actionLabel: 'فتح صفحة التأكيد',
@@ -221,7 +221,7 @@ export async function requestPasswordReset(identifierValue: string) {
   const url = `${getAppUrl()}/reset-password?token=${encodeURIComponent(token)}`
   await sendRecoveryEmail({
     to: destination,
-    subject: 'استعادة حسابك في لُغتي',
+    subject: 'استعادة حسابك في أكاديمية زايد التعليمية',
     title: 'استعادة الحساب',
     text: 'استخدم الرابط التالي لاختيار كلمة مرور جديدة. إذا لم تطلب ذلك، تجاهل الرسالة.',
     actionLabel: 'إعادة تعيين كلمة المرور',
