@@ -169,6 +169,7 @@ function Overview({ data }: { data: Data }) {
   const change = percentageChange(data.comparison.current, data.comparison.previous)
   return (
     <div className="admin-stack">
+      <BackupActions />
       <div className="admin-kpis">
         <Kpi
           icon={<Users />}
