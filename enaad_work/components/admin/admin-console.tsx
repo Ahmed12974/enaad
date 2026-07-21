@@ -2345,7 +2345,7 @@ function BackupActions() {
       <CardHeader>
         <CardTitle>النسخة الاحتياطية الكاملة</CardTitle>
         <CardDescription>
-          أنشئ نسخة ZIP قابلة للحفظ أو أرسلها مباشرة إلى enaadx@gmail.com. إذا كان الحجم كبيرًا، تصل الرسالة برابط تنزيل آمن صالح 7 أيام.
+          أنشئ نسخة ZIP قابلة للحفظ أو أرسلها مباشرة إلى enaad4786@gmail.com. إذا كان الحجم كبيرًا، تصل الرسالة برابط تنزيل آمن صالح 7 أيام.
         </CardDescription>
       </CardHeader>
       <CardContent className="admin-stack-sm">
@@ -2355,7 +2355,7 @@ function BackupActions() {
             تنزيل نسخة ZIP كاملة
           </Button>
           <Button type="button" variant="outline" disabled={pending} onClick={email}>
-            إنشاء وإرسال إلى enaadx@gmail.com
+            إنشاء وإرسال إلى enaad4786@gmail.com
           </Button>
         </div>
       </CardContent>

@@ -1,6 +1,6 @@
 import { normalizeEmail } from '@/lib/normalization'
 
-export const SOLE_ADMIN_EMAIL = 'enaadx@gmail.com' as const
+export const SOLE_ADMIN_EMAIL = 'enaad4786@gmail.com' as const
 
 export type AdminIdentity = {
   email: string
