@@ -1,0 +1,4 @@
+{
+  "controlsPolicy": "Every non-hidden input/select/textarea has a visible label or accessible name.",
+  "findings": []
+}

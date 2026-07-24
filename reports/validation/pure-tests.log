@@ -1,0 +1,281 @@
+TAP version 13
+# Subtest: administrator policy
+    # Subtest: authorizes only a verified, active database administrator role
+    ok 1 - authorizes only a verified, active database administrator role
+      ---
+      duration_ms: 0.843459
+      type: 'test'
+      ...
+    # Subtest: normalizes the optional bootstrap address and rejects invalid input
+    ok 2 - normalizes the optional bootstrap address and rejects invalid input
+      ---
+      duration_ms: 0.510743
+      type: 'test'
+      ...
+    1..2
+ok 1 - administrator policy
+  ---
+  duration_ms: 2.401688
+  type: 'suite'
+  ...
+# Subtest: admin requirements source integrity
+    # Subtest: exposes independent challenge and competition administration
+    ok 1 - exposes independent challenge and competition administration
+      ---
+      duration_ms: 30.790627
+      type: 'test'
+      ...
+    # Subtest: keeps sections dynamic and exposes level, promotion, badge, and CMS controls
+    ok 2 - keeps sections dynamic and exposes level, promotion, badge, and CMS controls
+      ---
+      duration_ms: 12.078036
+      type: 'test'
+      ...
+    # Subtest: blocks invalid competition lifecycle states from quiz issuance
+    ok 3 - blocks invalid competition lifecycle states from quiz issuance
+      ---
+      duration_ms: 7.675115
+      type: 'test'
+      ...
+    # Subtest: normalizes the alternate migration branch without destructive data loss
+    ok 4 - normalizes the alternate migration branch without destructive data loss
+      ---
+      duration_ms: 8.710051
+      type: 'test'
+      ...
+    # Subtest: contains no Unicode replacement characters in source and documentation
+    ok 5 - contains no Unicode replacement characters in source and documentation
+      ---
+      duration_ms: 64.411159
+      type: 'test'
+      ...
+    1..5
+ok 2 - admin requirements source integrity
+  ---
+  duration_ms: 124.91359
+  type: 'suite'
+  ...
+# Subtest: backup archive integrity and encryption
+    # Subtest: creates, reads and verifies every ZIP entry
+    ok 1 - creates, reads and verifies every ZIP entry
+      ---
+      duration_ms: 2.318728
+      type: 'test'
+      ...
+    # Subtest: verifies manifest hashes, table counts, blob counts and security exclusions
+    ok 2 - verifies manifest hashes, table counts, blob counts and security exclusions
+      ---
+      duration_ms: 42.553868
+      type: 'test'
+      ...
+    # Subtest: rejects false manifest counts and forbidden live-session exports
+    ok 3 - rejects false manifest counts and forbidden live-session exports
+      ---
+      duration_ms: 96.506603
+      type: 'test'
+      ...
+    # Subtest: rejects a corrupted compressed payload
+    ok 4 - rejects a corrupted compressed payload
+      ---
+      duration_ms: 0.285902
+      type: 'test'
+      ...
+    # Subtest: rejects a central-directory entry that disagrees with the local entry
+    ok 5 - rejects a central-directory entry that disagrees with the local entry
+      ---
+      duration_ms: 0.266798
+      type: 'test'
+      ...
+    # Subtest: rejects traversal paths and duplicate entries
+    ok 6 - rejects traversal paths and duplicate entries
+      ---
+      duration_ms: 0.185405
+      type: 'test'
+      ...
+    # Subtest: encrypts restorable credentials and rejects a wrong secret
+    ok 7 - encrypts restorable credentials and rejects a wrong secret
+      ---
+      duration_ms: 98.250609
+      type: 'test'
+      ...
+    1..7
+ok 3 - backup archive integrity and encryption
+  ---
+  duration_ms: 241.417728
+  type: 'suite'
+  ...
+# Subtest: competition availability policy
+    # Subtest: allows active and scheduled competitions during their window
+    ok 1 - allows active and scheduled competitions during their window
+      ---
+      duration_ms: 1.526017
+      type: 'test'
+      ...
+    # Subtest: blocks before start and after end
+    ok 2 - blocks before start and after end
+      ---
+      duration_ms: 0.354059
+      type: 'test'
+      ...
+    # Subtest: enforces verified and account-age audiences
+    ok 3 - enforces verified and account-age audiences
+      ---
+      duration_ms: 0.584736
+      type: 'test'
+      ...
+    1..3
+ok 4 - competition availability policy
+  ---
+  duration_ms: 3.6903
+  type: 'suite'
+  ...
+# Subtest: public error messages
+    # Subtest: preserves short expected Arabic business messages
+    ok 1 - preserves short expected Arabic business messages
+      ---
+      duration_ms: 1.19782
+      type: 'test'
+      ...
+    # Subtest: hides SQL, provider, stack and non-Arabic exception details
+    ok 2 - hides SQL, provider, stack and non-Arabic exception details
+      ---
+      duration_ms: 0.401654
+      type: 'test'
+      ...
+    1..2
+ok 5 - public error messages
+  ---
+  duration_ms: 2.890276
+  type: 'suite'
+  ...
+# Subtest: server-issued word quiz questions
+    # Subtest: always creates four unique choices with exactly one canonical answer
+    ok 1 - always creates four unique choices with exactly one canonical answer
+      ---
+      duration_ms: 1.297763
+      type: 'test'
+      ...
+    # Subtest: escapes regex metacharacters in completion questions
+    ok 2 - escapes regex metacharacters in completion questions
+      ---
+      duration_ms: 0.286169
+      type: 'test'
+      ...
+    # Subtest: creates an explicit blank even when the stored example does not contain the word
+    ok 3 - creates an explicit blank even when the stored example does not contain the word
+      ---
+      duration_ms: 0.20156
+      type: 'test'
+      ...
+    # Subtest: refuses ambiguous multiple-choice decks instead of issuing fewer than four choices
+    ok 4 - refuses ambiguous multiple-choice decks instead of issuing fewer than four choices
+      ---
+      duration_ms: 0.354155
+      type: 'test'
+      ...
+    # Subtest: uses grapheme-aware Arabic letter splitting
+    ok 5 - uses grapheme-aware Arabic letter splitting
+      ---
+      duration_ms: 7.947242
+      type: 'test'
+      ...
+    1..5
+ok 6 - server-issued word quiz questions
+  ---
+  duration_ms: 10.969694
+  type: 'suite'
+  ...
+# Subtest: release source security checks
+    # Subtest: contains no personal account address or committed runtime environment file
+    ok 1 - contains no personal account address or committed runtime environment file
+      ---
+      duration_ms: 74.412135
+      type: 'test'
+      ...
+    # Subtest: keeps permanent administrator access role-based and bootstrap verification-safe
+    ok 2 - keeps permanent administrator access role-based and bootstrap verification-safe
+      ---
+      duration_ms: 2.110967
+      type: 'test'
+      ...
+    # Subtest: protects private certificates while serving only active scheduled banners publicly
+    ok 3 - protects private certificates while serving only active scheduled banners publicly
+      ---
+      duration_ms: 1.403565
+      type: 'test'
+      ...
+    # Subtest: keeps signed backup downloads private and rejects path ambiguity
+    ok 4 - keeps signed backup downloads private and rejects path ambiguity
+      ---
+      duration_ms: 0.675808
+      type: 'test'
+      ...
+    # Subtest: keeps mobile navigation and RTL content from hiding administrative controls
+    ok 5 - keeps mobile navigation and RTL content from hiding administrative controls
+      ---
+      duration_ms: 1.016436
+      type: 'test'
+      ...
+    # Subtest: renders real achievement and badge data on the achievements route
+    ok 6 - renders real achievement and badge data on the achievements route
+      ---
+      duration_ms: 1.610556
+      type: 'test'
+      ...
+    # Subtest: keeps the challenge and achievement pages from over-fetching unrelated study data
+    ok 7 - keeps the challenge and achievement pages from over-fetching unrelated study data
+      ---
+      duration_ms: 1.180968
+      type: 'test'
+      ...
+    # Subtest: fails closed on missing production origins instead of publishing placeholder metadata
+    ok 8 - fails closed on missing production origins instead of publishing placeholder metadata
+      ---
+      duration_ms: 2.667127
+      type: 'test'
+      ...
+    # Subtest: marks the entire administrator tree as non-indexable
+    ok 9 - marks the entire administrator tree as non-indexable
+      ---
+      duration_ms: 0.864601
+      type: 'test'
+      ...
+    # Subtest: wires editing, speech, certificates and real backup actions into user interfaces
+    ok 10 - wires editing, speech, certificates and real backup actions into user interfaces
+      ---
+      duration_ms: 2.189869
+      type: 'test'
+      ...
+    # Subtest: redacts unexpected server-action errors before displaying them in quiz clients
+    ok 11 - redacts unexpected server-action errors before displaying them in quiz clients
+      ---
+      duration_ms: 1.045584
+      type: 'test'
+      ...
+    # Subtest: reports private Blob cleanup failures instead of silently swallowing them
+    ok 12 - reports private Blob cleanup failures instead of silently swallowing them
+      ---
+      duration_ms: 0.664393
+      type: 'test'
+      ...
+    # Subtest: backup source requires real data, blob integrity, encrypted credentials and provider confirmation
+    ok 13 - backup source requires real data, blob integrity, encrypted credentials and provider confirmation
+      ---
+      duration_ms: 0.905848
+      type: 'test'
+      ...
+    1..13
+ok 7 - release source security checks
+  ---
+  duration_ms: 92.167562
+  type: 'suite'
+  ...
+1..7
+# tests 37
+# suites 7
+# pass 37
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 958.50368

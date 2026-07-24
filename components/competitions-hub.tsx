@@ -17,7 +17,7 @@ type Competition = {
   questionCount: number
   xpReward: number
   coinReward: number
-  lifecycle: 'scheduled' | 'active'
+  lifecycle: 'active' | 'cancelled' | 'draft' | 'scheduled' | 'ended'
   rules: string | null
   startsAt: Date | null
   endsAt: Date | null
