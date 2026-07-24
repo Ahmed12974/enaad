@@ -355,7 +355,7 @@ export async function getLanguageWords(languageValue: 'en' | 'ar') {
 export async function addWord(form: FormData) {
   const current = await requireUser()
   const parsed = parseWordForm(form)
-  if (!parsed.success) return { ok: false, message: 'تحقق من بيانات الكلمة والحدود المسموحة.' }
+  if (!parsed.success) return { ok: false as const, message: 'تحقق من بيانات الكلمة والحدود المسموحة.' }
   const word = cleanText(parsed.data.word)
   const normalizedWord = normalizeText(word)
   const categoryId = await validateCategory(current.id, parsed.data.categoryId, parsed.data.language)
@@ -372,11 +372,11 @@ export async function addWord(form: FormData) {
       await reconcileChallengesForUser(tx, current.id)
       return record
     })
-    if (!created) return { ok: false, message: 'الكلمة موجودة بالفعل في حسابك.' }
+    if (!created) return { ok: false as const, message: 'الكلمة موجودة بالفعل في حسابك.' }
     refresh('/', '/words', '/english', '/arabic', '/study', '/challenges')
-    return { ok: true, word: created }
+    return { ok: true as const, word: created }
   } catch (error) {
-    if (isUniqueViolation(error)) return { ok: false, message: 'الكلمة موجودة بالفعل في حسابك.' }
+    if (isUniqueViolation(error)) return { ok: false as const, message: 'الكلمة موجودة بالفعل في حسابك.' }
     throw error
   }
 }
@@ -389,9 +389,9 @@ export async function updateWord(id: number, form: FormData) {
     .from(words)
     .where(and(eq(words.id, wordId), eq(words.userId, current.id), isNull(words.deletedAt)))
     .limit(1)
-  if (!existing) return { ok: false, message: 'الكلمة غير موجودة أو لا تملك صلاحية تعديلها.' }
+  if (!existing) return { ok: false as const, message: 'الكلمة غير موجودة أو لا تملك صلاحية تعديلها.' }
   const parsed = parseWordForm(form)
-  if (!parsed.success) return { ok: false, message: 'تحقق من بيانات الكلمة والحدود المسموحة.' }
+  if (!parsed.success) return { ok: false as const, message: 'تحقق من بيانات الكلمة والحدود المسموحة.' }
   const categoryId = await validateCategory(current.id, parsed.data.categoryId, parsed.data.language)
   const word = cleanText(parsed.data.word)
   const optional = <K extends keyof typeof parsed.data>(key: K) =>
@@ -416,11 +416,11 @@ export async function updateWord(id: number, form: FormData) {
       .set(nextValues)
       .where(and(eq(words.id, wordId), eq(words.userId, current.id), isNull(words.deletedAt)))
       .returning({ id: words.id })
-    if (!updated) return { ok: false, message: 'الكلمة غير موجودة أو لا تملك صلاحية تعديلها.' }
+    if (!updated) return { ok: false as const, message: 'الكلمة غير موجودة أو لا تملك صلاحية تعديلها.' }
     refresh('/words', '/english', '/arabic', '/study')
-    return { ok: true }
+    return { ok: true as const }
   } catch (error) {
-    if (isUniqueViolation(error)) return { ok: false, message: 'توجد كلمة مطابقة بالفعل في حسابك.' }
+    if (isUniqueViolation(error)) return { ok: false as const, message: 'توجد كلمة مطابقة بالفعل في حسابك.' }
     throw error
   }
 }
@@ -469,7 +469,7 @@ export async function addSentence(form: FormData) {
     translation: form.get('translation'),
     category: form.get('category') || 'يومية',
   })
-  if (!parsed.success) return { ok: false, message: 'تحقق من بيانات الجملة.' }
+  if (!parsed.success) return { ok: false as const, message: 'تحقق من بيانات الجملة.' }
   const sentence = cleanText(parsed.data.sentence)
   const [created] = await db.transaction(async (tx) => {
     const result = await tx
@@ -483,9 +483,9 @@ export async function addSentence(form: FormData) {
     }
     return result
   })
-  if (!created) return { ok: false, message: 'الجملة موجودة بالفعل في حسابك.' }
+  if (!created) return { ok: false as const, message: 'الجملة موجودة بالفعل في حسابك.' }
   refresh('/', '/sentences', '/challenges')
-  return { ok: true }
+  return { ok: true as const }
 }
 
 export async function toggleFavorite(id: number) {
@@ -685,7 +685,7 @@ export async function submitWordQuiz(
         .where(and(eq(wordQuizAttempts.id, attemptId), eq(wordQuizAttempts.userId, current.id)))
         .limit(1)
       if (!saved) throw new Error('محاولة الاختبار غير موجودة')
-      return { ok: false, message: 'تم تصحيح هذه المحاولة مسبقًا.', ...saved }
+      return { ok: false as const, message: 'تم تصحيح هذه المحاولة مسبقًا.', ...saved }
     }
 
     const issued = await tx
@@ -796,7 +796,7 @@ export async function submitWordQuiz(
     await reconcileChallengesForUser(tx, current.id)
     refresh('/', '/quiz', '/results', '/mistakes', '/words', '/challenges')
     return {
-      ok: true,
+      ok: true as const,
       status: 'completed' as const,
       score,
       correctAnswers: correct,
@@ -1053,7 +1053,7 @@ export async function submitMathQuiz(
         .where(and(eq(mathAttempts.id, attemptId), eq(mathAttempts.userId, current.id)))
         .limit(1)
       if (!saved) throw new Error('محاولة الرياضيات غير موجودة')
-      return { ok: false, message: 'تم حفظ هذه المحاولة مسبقًا.', attempt: saved }
+      return { ok: false as const, message: 'تم حفظ هذه المحاولة مسبقًا.', attempt: saved }
     }
     const issued = await tx
       .select({ id: mathQuestions.id, correctOption: mathQuestions.correctOption })
@@ -1096,7 +1096,7 @@ export async function submitMathQuiz(
     })
     await reconcileChallengesForUser(tx, current.id)
     refresh(`/math`, `/math/${attempt.sectionId}`, '/challenges')
-    return { ok: true, attempt: saved }
+    return { ok: true as const, attempt: saved }
   })
 }
 
@@ -1767,9 +1767,9 @@ export async function createPlatformCategory(form: FormData) {
       return records
     })
     refresh('/admin', '/add', '/arabic', '/english')
-    return { ok: true, message: 'تم إنشاء القسم.', category: created }
+    return { ok: true as const, message: 'تم إنشاء القسم.', category: created }
   } catch (error) {
-    if (isUniqueViolation(error)) return { ok: false, message: 'يوجد قسم بالاسم أو المعرّف نفسه.' }
+    if (isUniqueViolation(error)) return { ok: false as const, message: 'يوجد قسم بالاسم أو المعرّف نفسه.' }
     throw error
   }
 }
@@ -1795,9 +1795,9 @@ export async function updatePlatformCategory(categoryId: number, form: FormData)
       return updated
     })
     refresh('/admin', '/add', '/arabic', '/english')
-    return { ok: true, message: 'تم تعديل القسم.', category: result }
+    return { ok: true as const, message: 'تم تعديل القسم.', category: result }
   } catch (error) {
-    if (isUniqueViolation(error)) return { ok: false, message: 'يوجد قسم بالاسم أو المعرّف نفسه.' }
+    if (isUniqueViolation(error)) return { ok: false as const, message: 'يوجد قسم بالاسم أو المعرّف نفسه.' }
     throw error
   }
 }
@@ -1926,9 +1926,9 @@ export async function createMathSection(form: FormData) {
       return records
     })
     refresh('/admin', '/math')
-    return { ok: true, message: 'تم إنشاء قسم الرياضيات.', section: created }
+    return { ok: true as const, message: 'تم إنشاء قسم الرياضيات.', section: created }
   } catch (error) {
-    if (isUniqueViolation(error)) return { ok: false, message: 'يوجد قسم رياضيات بهذا الاسم أو المعرّف.' }
+    if (isUniqueViolation(error)) return { ok: false as const, message: 'يوجد قسم رياضيات بهذا الاسم أو المعرّف.' }
     throw error
   }
 }
@@ -1993,9 +1993,9 @@ export async function createChallenge(form: FormData) {
       return records
     })
     refresh('/admin', '/challenges')
-    return { ok: true, challenge: created }
+    return { ok: true as const, challenge: created }
   } catch (error) {
-    if (isUniqueViolation(error)) return { ok: false, message: 'يوجد تحدٍ بهذا العنوان بالفعل.' }
+    if (isUniqueViolation(error)) return { ok: false as const, message: 'يوجد تحدٍ بهذا العنوان بالفعل.' }
     throw error
   }
 }
