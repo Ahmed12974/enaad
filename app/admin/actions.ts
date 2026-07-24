@@ -13,6 +13,8 @@ import {
   replaceContentPrerequisitesTx,
 } from '@/lib/admin-domain'
 import { getAuditRequestContext, writeAdminAudit } from '@/lib/admin-audit'
+
+import { ForbiddenError } from '@/lib/admin-policy'
 import { requirePermission } from '@/lib/auth-session'
 import { db, type DbTransaction } from '@/lib/db'
 import {
