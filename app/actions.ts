@@ -805,7 +805,9 @@ export async function submitWordQuiz(
   })
 }
 
-export async function joinChallenge(challengeId: number) {
+export async function joinChallenge(
+  challengeId: number,
+): Promise<{ ok: true } | { ok: false; message: string }> {
   const current = await requireUser()
   const now = new Date()
   const challengeKey = idSchema.parse(challengeId)
