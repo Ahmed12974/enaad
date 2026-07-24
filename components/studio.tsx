@@ -42,8 +42,8 @@ type W = {
   correctCount: number
   createdAt: Date
   language?: 'en' | 'ar'
-  level?: 'A1' | 'A2' | 'B1' | 'B2' | 'C1' | 'C2'
-  difficulty?: 'easy' | 'medium' | 'hard'
+  level?: string
+  difficulty?: string
 }
 type S = { id: number; sentence: string; translation: string; category: string; createdAt: Date }
 type T = { id: number; score: number; correctAnswers: number; wrongAnswers: number; completedAt: Date }
