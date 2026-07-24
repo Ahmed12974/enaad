@@ -1,41 +1,17 @@
-،import { redirect } from 'next/navigation'
-
+import { auth } from '@/lib/auth'
+import { headers } from 'next/headers'
+import { redirect } from 'next/navigation'
+import { getCompetitions, isAdmin } from '@/app/actions'
 import { AppShell } from '@/components/app-shell'
-import { CompetitionsHub } from '@/components/competitions/competitions-hub'
-import { getCompetitionsHubData, isAdmin } from '@/app/actions'
-import { requireUser } from '@/lib/auth-session'
+import { CompetitionsHub } from '@/components/competitions-hub'
 
 export default async function CompetitionsPage() {
-  const session = await requireUser()
-
-  if (!session?.user) {
-    redirect('/sign-in')
-  }
-
-  const data = await getCompetitionsHubData()
-  
-
-  const visibleItems = data.items.filter(
-    (item) =>
-      item.lifecycle === 'active' ||
-      item.lifecycle === 'scheduled',
-  ) as Array<
-    (typeof data.items)[number] & {
-      lifecycle: 'active' | 'scheduled'
-    }
-  >
-
-  const visibleData = {
-    ...data,
-    items: visibleItems,
-  }
-
+  const session = await auth.api.getSession({ headers: await headers() })
+  if (!session?.user) redirect('/sign-in')
+  const data = await getCompetitions()
   return (
-    <AppShell
-      name={session.user.name}
-      isAdmin={await isAdmin()}
-    >
-      <CompetitionsHub data={visibleData} />
+    <AppShell name={session.user.name} isAdmin={await isAdmin()}>
+      <CompetitionsHub data={data} />
     </AppShell>
   )
 }
