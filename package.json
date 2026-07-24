@@ -1,5 +1,5 @@
 {
-  "name": "lughati-learning-platform",
+  "name": "zayed-educational-academy",
   "version": "0.1.0",
   "private": true,
   "packageManager": "pnpm@10.28.2",
@@ -19,7 +19,14 @@
     "db:migrate": "node scripts/migrate.mjs",
     "db:seed": "node --import tsx scripts/seed.ts",
     "auth:diagnose": "node --import tsx scripts/auth-diagnostics.ts",
-    "admin:promote": "node --import tsx scripts/promote-admin.ts"
+    "admin:promote": "pnpm run admin:bootstrap",
+    "release:verify": "node --import tsx scripts/verify-release.ts",
+    "restore:backup": "pnpm run backup:restore",
+    "admin:bootstrap": "node --import tsx scripts/promote-admin.ts --confirm",
+    "backup:verify": "node --import tsx scripts/verify-backup.ts",
+    "backup:restore": "node --import tsx scripts/restore-backup.ts",
+    "audit:schema": "node scripts/audit-schema-source.cjs",
+    "audit:a11y": "node scripts/audit-accessibility-source.cjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
@@ -60,7 +67,7 @@
     "drizzle-kit": "^0.31.5",
     "eslint": "^9.30.1",
     "eslint-config-next": "16.2.6",
-    "postcss": "^8.5.19",
+    "postcss": "8.5.19",
     "prettier": "3.6.2",
     "tailwindcss": "^4.2.0",
     "tsx": "^4.20.3",

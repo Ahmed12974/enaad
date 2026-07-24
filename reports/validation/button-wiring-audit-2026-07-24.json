@@ -1,0 +1,11 @@
+{
+  "tsxFiles": 96,
+  "buttonLikeControls": 128,
+  "mechanisms": {
+    "handler": 58,
+    "formSubmit": 25,
+    "linkOrRender": 45
+  },
+  "unwiredFindings": 0,
+  "findings": []
+}

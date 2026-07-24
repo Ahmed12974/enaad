@@ -15,7 +15,15 @@ export async function proxy(request: NextRequest) {
       )
     return NextResponse.redirect(new URL('/maintenance', request.url))
   }
-  if (path === '/sign-in' || path === '/sign-up' || path.startsWith('/auth/continue'))
+  if (
+    path === '/sign-in' ||
+    path === '/sign-up' ||
+    path.startsWith('/auth/continue') ||
+    // The file route performs its own record-level authorization. Active public
+    // banners must remain reachable without a session, while private certificates
+    // are still rejected by the route itself.
+    path === '/api/files'
+  )
     return NextResponse.next()
   if (getSessionCookie(request, { cookiePrefix: 'lughati' })) return NextResponse.next()
   const signIn = new URL('/sign-in', request.url)
